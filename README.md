@@ -33,7 +33,7 @@ cp .env.example .env
 ```bash
 ./scripts/start.sh
 # または
-docker-compose up -d
+docker compose up -d
 ```
 
 ## ディレクトリ構成 (Directory Structure)
