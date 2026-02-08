@@ -81,16 +81,16 @@ server {
 設定ファイルを追加・変更したら、Nginxコンテナを再起動して設定を反映します：
 
 ```bash
-cd nginx && docker compose restart nginx
+docker compose -f nginx/docker-compose.yml restart nginx
 ```
 
 または、設定ファイルの構文をチェックしてからリロード：
 
 ```bash
-cd nginx && docker compose exec nginx nginx -t
+docker compose -f nginx/docker-compose.yml exec nginx nginx -t
 
 # 問題がなければリロード
-cd nginx && docker compose exec nginx nginx -s reload
+docker compose -f nginx/docker-compose.yml exec nginx nginx -s reload
 ```
 
 ### 設定例
@@ -132,7 +132,7 @@ server {
 リポジトリのルートディレクトリから以下のコマンドを実行します：
 
 ```bash
-cd nginx && docker compose up -d
+docker compose -f nginx/docker-compose.yml up -d
 ```
 
 ### systemdを使用（自動起動設定）
