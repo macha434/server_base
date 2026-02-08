@@ -35,9 +35,11 @@ server_base/
 ### ステップ1: テンプレートファイルをコピー
 
 ```bash
-cd /home/runner/work/server_base/server_base/nginx
+cd nginx
 cp template/template.conf conf.d/your_app_name.conf
 ```
+
+※ リポジトリのルートディレクトリから実行してください
 
 ### ステップ2: 設定ファイルを編集
 
@@ -80,7 +82,7 @@ server {
 設定ファイルを追加・変更したら、Nginxコンテナを再起動して設定を反映します：
 
 ```bash
-cd /home/runner/work/server_base/server_base/nginx
+cd nginx
 docker compose restart nginx
 ```
 
@@ -131,14 +133,16 @@ server {
 ### Docker Composeを使用
 
 ```bash
-cd /home/runner/work/server_base/server_base/nginx
+cd nginx
 docker compose up -d
 ```
 
 ### systemdを使用（自動起動設定）
 
+systemdサービスを使用する場合は、リポジトリのルートディレクトリから実行してください：
+
 ```bash
-# サービスファイルをコピー
+# サービスファイルをコピー（リポジトリルートから実行）
 sudo cp nginx/systemd/user/nginx-stack.service /etc/systemd/system/
 
 # サービスを有効化して起動
