@@ -1,0 +1,4 @@
+# Logs Directory
+
+This directory contains log files from various services.
+Log files are excluded from git tracking via .gitignore.
