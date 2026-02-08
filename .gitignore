@@ -1,0 +1,40 @@
+# Environment variables
+.env
+*.env
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# SSL certificates and keys
+*.pem
+*.key
+*.crt
+*.csr
+ssl/private/
+ssl/certs/
+
+# Data directories
+data/
+volumes/
+backups/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
