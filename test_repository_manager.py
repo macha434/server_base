@@ -23,7 +23,7 @@ def test_add_repository():
         
         # Add repository
         result = manager.add_repository(repo_dir)
-        assert result == True, "Failed to add repository"
+        assert result, "Failed to add repository"
         
         # Verify it was added
         repos = manager.list_repositories()
@@ -70,7 +70,7 @@ def test_remove_repository():
         
         # Remove repository
         result = manager.remove_repository(repo_dir)
-        assert result == True, "Failed to remove repository"
+        assert result, "Failed to remove repository"
         
         # Verify it was removed
         repos = manager.list_repositories()
@@ -93,8 +93,8 @@ def test_get_repository_info():
         
         # Get repository info
         info = manager.get_repository_info(repo_dir)
-        assert info["exists"] == True, "Repository should exist"
-        assert info["is_git"] == True, "Repository should be a git repo"
+        assert info["exists"], "Repository should exist"
+        assert info["is_git"], "Repository should be a git repo"
         assert info["path"] == repo_dir, "Path mismatch"
         
         print("✓ test_get_repository_info passed")
