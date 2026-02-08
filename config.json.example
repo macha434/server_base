@@ -1,0 +1,9 @@
+{
+  "repositories": {
+    "local_paths": []
+  },
+  "server": {
+    "host": "localhost",
+    "port": 8080
+  }
+}
