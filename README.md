@@ -141,7 +141,13 @@ docker compose -f nginx/docker-compose.yml up -d
 
 ```bash
 # サービスファイルをコピー
-sudo cp nginx/systemd/user/nginx-stack.service /etc/systemd/system/
+sudo cp $(pwd)/nginx/systemd/user/nginx-stack.service /etc/systemd/system/
+
+# サービスファイル内のWorkingDirectoryを環境に合わせて編集
+sudo sed -i "s|WorkingDirectory=.*|WorkingDirectory=$(pwd)/nginx|g" /etc/systemd/system/nginx-stack.service
+
+# systemdデーモンをリロード
+sudo systemctl daemon-reload
 
 # サービスを有効化して起動
 sudo systemctl enable nginx-stack.service
