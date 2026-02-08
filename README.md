@@ -75,7 +75,16 @@ certbot certonly --standalone -d yourdomain.com
 
 ## カスタマイズ (Customization)
 
+### サービスの追加
 新しいサービスを追加する場合は、`docker-compose.yml`を編集してください。
+
+### Nginxの設定
+`config/nginx/default.conf`を編集して、ドメイン名やリバースプロキシの設定をカスタマイズできます。
+設定を変更した後は、サービスを再起動してください：
+
+```bash
+./scripts/restart.sh
+```
 
 ## ライセンス (License)
 
