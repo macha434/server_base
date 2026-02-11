@@ -8,6 +8,7 @@ services:
     volumes:
       - ./conf.d:/etc/nginx/conf.d
       - ./logs:/var/log/nginx
+      - ./ssl:/etc/nginx/ssl:ro
     restart: always
     networks:
       - webnet
