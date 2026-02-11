@@ -66,7 +66,7 @@ echo "✓ dnsmasq.confを生成しました"
 # 2. dnsmasqコンテナを起動
 echo ""
 echo "2. dnsmasqコンテナを起動しています..."
-docker-compose up -d dnsmasq
+docker compose up -d dnsmasq
 
 # コンテナが起動するまで少し待つ
 sleep 2
