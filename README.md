@@ -44,37 +44,15 @@ cp nginx/template/template.conf nginx/conf.d/your_app_name.conf
 
 `conf.d/your_app_name.conf` を開き、以下の項目を変更します：
 
-```nginx
-# アップストリームの名前を変更
-upstream your_app_backend {
-    # アプリケーションのホスト名とポート番号を指定
-    server your_app_container:port_number;
-}
-
-server {
-    listen 80;
-    server_name _;
-
-    # ロケーションのパスを変更
-    location /your_app_path {
-        proxy_pass http://your_app_backend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
 #### 変更する項目：
 
 1. **upstream名** (`your_app_backend`): アプリケーションを識別する名前に変更
 2. **server**: アプリケーションのコンテナ名とポート番号を指定
    - `your_app_container`: Dockerコンテナ名（docker-composeで定義された名前）
    - `port_number`: アプリケーションがリッスンしているポート番号
-3. **location**: アプリケーションにアクセスするためのURLパス
-   - 例: `/api`, `/admin`, `/app1` など
-4. **proxy_pass**: upstreamの名前と一致させる（`http://`を前置）
+3. **server_name**: アプリケーションにアクセスするためのサブドメイン
+   - 例: `api.localhost`, `admin.localhost`, `app1.localhost` など
+4. **proxy_pass**: upstreamの名前と一致させる（`http://`を前置、末尾に`/`を付ける）
 
 ### ステップ3: Nginxコンテナを再起動
 
@@ -102,12 +80,13 @@ upstream blog_backend {
     server blog:3001;
 }
 
+# サブドメイン設定
 server {
     listen 80;
-    server_name _;
+    server_name blog.localhost;
 
-    location /blog {
-        proxy_pass http://blog_backend;
+    location / {
+        proxy_pass http://blog_backend/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -116,14 +95,15 @@ server {
 }
 ```
 
-この設定により、`http://your-server/blog` にアクセスすると、`blog`コンテナのポート3001にプロキシされます。
+この設定により、`http://blog.localhost/` にアクセスすると、`blog`コンテナのポート3001にプロキシされます。
 
 ## 注意事項
 
 - アプリケーション自体は別のリポジトリで管理されます
 - アプリケーションのDockerコンテナは、Nginxと同じ `webnet` ネットワークに接続する必要があります
 - 複数のアプリケーションを追加する場合は、各アプリケーションごとに別々の設定ファイルを作成してください
-- `location` のパスが重複しないように注意してください
+- サブドメイン（`*.localhost`）は開発環境でのアクセスに使用されます
+  - 本番環境では適切なドメイン名に変更してください
 
 ## サーバーの起動
 
