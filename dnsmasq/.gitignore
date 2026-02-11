@@ -1,0 +1,5 @@
+# 自動生成されたdnsmasq設定ファイル
+dnsmasq.conf
+
+# ログディレクトリ
+logs/
