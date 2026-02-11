@@ -1,0 +1,48 @@
+{
+  "name": "Nginx Server Base",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "username": "vscode",
+      "userUid": "1000",
+      "userGid": "1000"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "github.copilot",
+        "github.copilot-chat"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  },
+  "forwardPorts": [
+    80,
+    443
+  ],
+  "portsAttributes": {
+    "80": {
+      "label": "HTTP",
+      "onAutoForward": "notify"
+    },
+    "443": {
+      "label": "HTTPS",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "echo 'Dev container ready!'",
+  "remoteUser": "vscode"
+}

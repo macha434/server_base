@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    networks:
+      - devnet
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-dev
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/conf.d:/etc/nginx/conf.d
+      - ../nginx/logs:/var/log/nginx
+      - ../nginx/ssl:/etc/nginx/ssl
+    restart: unless-stopped
+    networks:
+      - webnet
+    depends_on:
+      - workspace
+
+networks:
+  devnet:
+    name: devnet
+    driver: bridge
+
+  webnet:
+    name: webnet
+    driver: bridge
