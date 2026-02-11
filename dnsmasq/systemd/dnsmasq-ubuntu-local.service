@@ -8,10 +8,10 @@ RemainAfterExit=yes
 WorkingDirectory=/workspace/dnsmasq
 
 # コンテナを起動
-ExecStart=/usr/bin/docker-compose up -d
+ExecStart=/usr/bin/docker compose up -d
 
 # コンテナを停止
-ExecStop=/usr/bin/docker-compose down
+ExecStop=/usr/bin/docker compose down
 
 # サービス再起動時の設定
 Restart=on-failure
