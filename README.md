@@ -50,8 +50,8 @@ cp nginx/template/template.conf nginx/conf.d/your_app_name.conf
 2. **server**: アプリケーションのコンテナ名とポート番号を指定
    - `your_app_container`: Dockerコンテナ名（docker-composeで定義された名前）
    - `port_number`: アプリケーションがリッスンしているポート番号
-3. **server_name**: アプリケーションにアクセスするためのサブドメイン
-   - 例: `api.localhost`, `admin.localhost`, `app1.localhost` など
+3. **locationパス**: アプリケーションにアクセスするためのパス
+   - 例: `/api/`, `/admin/`, `/nature/` など
 4. **proxy_pass**: upstreamの名前と一致させる（`http://`を前置、末尾に`/`を付ける）
 
 ### ステップ3: Nginxコンテナを再起動
@@ -80,12 +80,12 @@ upstream blog_backend {
     server blog:3001;
 }
 
-# サブドメイン設定
+# パスルーティング設定
 server {
     listen 80;
-    server_name blog.localhost;
+    server_name ubuntu.local;
 
-    location / {
+    location /blog/ {
         proxy_pass http://blog_backend/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -95,15 +95,15 @@ server {
 }
 ```
 
-この設定により、`http://blog.localhost/` にアクセスすると、`blog`コンテナのポート3001にプロキシされます。
+この設定により、`http://ubuntu.local/blog/` にアクセスすると、`blog`コンテナのポート3001にプロキシされます。
 
 ## 注意事項
 
 - アプリケーション自体は別のリポジトリで管理されます
 - アプリケーションのDockerコンテナは、Nginxと同じ `webnet` ネットワークに接続する必要があります
 - 複数のアプリケーションを追加する場合は、各アプリケーションごとに別々の設定ファイルを作成してください
-- サブドメイン（`*.localhost`）は開発環境でのアクセスに使用されます
-  - 本番環境では適切なドメイン名に変更してください
+- パスベースのルーティング（例: `/nature/`）で各アプリケーションへ振り分けます
+  - 本番環境では適切なドメイン名・パス設計に変更してください
 
 ## サーバーの起動
 
