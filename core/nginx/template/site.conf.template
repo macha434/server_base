@@ -4,13 +4,13 @@ server {
     http2 on;
     server_name __HOST__;
 
-    include snippets/ssl.conf;
-    include snippets/security.conf;
+    include conf.d/snippets/ssl.conf;
+    include conf.d/snippets/security.conf;
 
     location / {
         set $upstream http://__UPSTREAM__:__PORT__;
         proxy_pass $upstream;
-        include snippets/proxy.conf;
+        include conf.d/snippets/proxy.conf;
     }
 }
 

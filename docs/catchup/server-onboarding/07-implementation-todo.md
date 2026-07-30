@@ -38,6 +38,12 @@
   `networks: !override` で完全に置き換える必要がある（実測で確認済み。
   01〜06 が検証に使った time-announcement-frontend は `networks:` 無宣言だったため、
   このケースには気づいていなかった）。`scripts/new-app.sh` は常に `!override` を使う。
+- **`include snippets/*.conf;` は nginx の設定 prefix (`/etc/nginx`) 基準で解決される**
+  ため、`conf.d/*.conf` の中から書くと `/etc/nginx/snippets/...` を探しに行ってしまい
+  **`nginx -t` が失敗する**（`conf.d/snippets/` に置いているため）。実機の nginx（Ubuntu
+  パッケージ版で `nginx -t` を実測）で確認・修正済み。`core/nginx/conf.d/default.conf`・
+  `core/nginx/template/site.conf.template`・生成済みの `core/nginx/conf.d/*.ubuntu.local.conf`
+  はすべて `include conf.d/snippets/...` に修正した。
 
 ## Phase 1: nginx 基盤の整理
 
@@ -98,6 +104,20 @@
 > パースのみ）による構成検証までは実施したが、実際の `up -d`・`nginx -t`・
 > HTTPS 疎通・mkcert・DNS 解決は**未検証**。実サーバー上で
 > `./scripts/up.sh` を実行して最終確認すること。
+>
+> **追記(別セッションでの再検証):** このリポジトリの devcontainer は
+> `/var/run/docker.sock` を直接マウントしており、実ホーム機の Docker デーモンを共有する
+> 構成だった（既存の他プロジェクト用ネットワークや `nginx-dev` コンテナの存在で確認）。
+> このため `scripts/up.sh` をこのコンテナ内から実行すると、compose の相対パスは
+> コンテナ側の `/workspace` 基準で解決されるが、デーモンは実ホストのファイルシステムで
+> それを解釈してしまい、bind mount が意図しない場所を指す。したがって
+> **実コンテナの起動・停止はこのセッションでも実施していない**（実サーバーで直接
+> 実行する必要があるのは変わらず）。代わりに、a) 兄弟リポジトリを一時的に clone した
+> 上で `docker compose config` の再検証、b) 実際の nginx バイナリ（Ubuntu パッケージ）
+> による `nginx -t` 構文検証、を追加で実施した。(b) で `include snippets/*.conf;` の
+> パス解決バグを発見・修正済み（上記「実装中に確定した追加事項」参照）。
+> external volume の用意・実際の起動確認・HTTPS 疎通・`down`→`up` の再現性確認は
+> 引き続き実サーバーでの確認が必要。
 
 ## Phase 7: ネットワーク分離とアプリ側変更耐性の検証
 
