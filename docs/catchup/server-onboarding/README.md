@@ -63,6 +63,7 @@ Phase 0 と Phase 1 は独立に導入でき、どちらも既存構成を壊さ
 | [04-alternatives.md](./04-alternatives.md) | nginx 以外の選択肢（Traefik / Caddy / nginx-proxy / NPM / Coolify / Dokploy / Swarm / k3s）|
 | [05-recommendation.md](./05-recommendation.md) | 既存構成を活かす場合の推奨構成・実ファイル例・移行手順 |
 | [06-selection.md](./06-selection.md) | **ゼロから作り直す前提**での技術選定（セキュリティ / 設定・導入の簡易さ / キャッチアップ難易度など 12 軸で比較）|
+| [07-implementation-todo.md](./07-implementation-todo.md) | 実装 TODO。確定した構成（`core/compose.yaml`・`stacks/<app名>/docker-compose.yml`・生成スクリプト）とフェーズ別チェックリスト |
 
 ## 検証環境
 

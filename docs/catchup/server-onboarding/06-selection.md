@@ -18,7 +18,7 @@
 
 ## 1. まず確認: 「1 ファイル置くだけ」は実現可能か → **可能**
 
-実測で確認した（検証手順は[末尾](#実測検証-test12test20)）。
+実測で確認した（検証手順は[末尾](#実測検証-test12test23)）。
 **アプリ 1 個 = `stacks/` に YAML 1 枚**という形が Compose だけで成立する。
 
 `stacks/time-announcement.yml`（これ 1 枚でアプリ 1 個が完結する）:
@@ -532,7 +532,7 @@ networks:
 
 ---
 
-## 実測検証 (TEST12〜TEST20)
+## 実測検証 (TEST12〜TEST23)
 
 Compose v5.3.1 / Docker 29.6.2、`docker compose config`（デーモン不要）で確認。
 
