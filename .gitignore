@@ -1,1 +1,6 @@
 nginx/logs/
+
+# APM dependencies・生成物 (apm.yml から `apm install` で再生成される)
+apm_modules/
+.claude/
+.mcp.json
