@@ -2,146 +2,123 @@
 
 ## 概要
 
-このリポジトリは、複数のWebアプリケーションを管理するためのNginxベースのサーバー基盤環境を提供します。Docker Composeを使用してNginxをコンテナとして実行し、リバースプロキシとして各アプリケーションへのルーティングを行います。
+複数の Web アプリケーションを、アプリ側リポジトリを一切改変せずに追加できる
+Nginx ベースのサーバー基盤環境。Docker Compose の `include` を使って
+server_base を composition root（合成の起点）にし、アプリ側 compose を読み込んで
+差分だけを上書きする構成を取る。
+
+背景・設計調査は [docs/catchup/server-onboarding/](docs/catchup/server-onboarding/README.md) を参照。
 
 ## 構成
 
 ```
 server_base/
-├── nginx/
-│   ├── conf.d/              # Nginxの設定ファイルを配置
-│   │   └── default.conf     # デフォルト設定（ヘルスチェック）
-│   ├── template/            # 新規アプリケーション追加用のテンプレート
-│   │   └── template.conf    # 設定ファイルのテンプレート
-│   ├── systemd/             # systemdサービス設定
-│   │   └── user/
-│   │       └── nginx-stack.service
-│   ├── logs/                # Nginxログファイルの出力先
-│   └── docker-compose.yml   # Nginxコンテナの定義
-└── README.md
+├── core/                        # 基盤サービス一式 (nginx + dnsmasq)
+│   ├── compose.yaml
+│   ├── nginx/
+│   │   ├── conf.d/
+│   │   │   ├── 00-http.conf     # resolver・WebSocket 用 map (http コンテキスト)
+│   │   │   ├── snippets/        # ssl.conf / security.conf / proxy.conf
+│   │   │   ├── default.conf     # localhost / ubuntu.local ヘルスチェック
+│   │   │   └── *.conf           # ← アプリごとの vhost。gen-nginx-conf.py が生成
+│   │   ├── template/site.conf.template
+│   │   └── ssl/                 # mkcert 証明書置き場・生成スクリプト
+│   ├── dnsmasq/                 # *.ubuntu.local のワイルドカード DNS
+│   └── systemd/                 # core スタック全体の systemd ユーザーサービス
+├── stacks/                      # アプリごとの override (1 app = 1 ディレクトリ)
+│   └── <app名>/docker-compose.yml
+└── scripts/
+    ├── new-app.sh                # stacks/<app名>/docker-compose.yml の雛形生成
+    ├── gen-nginx-conf.py         # site.* ラベルから nginx vhost を生成
+    ├── render-compose.sh         # core + stacks を include でまとめた compose.generated.yaml を生成
+    ├── up.sh                     # conf生成 → up -d → nginx -t && reload
+    └── down.sh
 ```
 
-## 機能
+アプリ側リポジトリは server_base の**兄弟ディレクトリ**にクローンする前提（`include` の
+相対パスが固定されるため）:
 
-- **リバースプロキシ**: 複数のアプリケーションを単一のNginxインスタンスで管理
-- **ヘルスチェック**: `/health` エンドポイントでサーバーの状態を確認
-- **Docker化**: コンテナベースでの簡単なデプロイと管理
-- **systemd統合**: システム起動時の自動起動をサポート
+```
+/opt/                                     ← 任意のベースディレクトリ
+├── server_base/
+└── time-announcement-frontend/           # 改変しない (git clone したまま)
+    └── deploy/docker-compose.yaml
+```
+
+## 設計の要点
+
+- **アプリごとに専用ネットワーク**（`net-<app名>`）を切る。nginx だけが全網に参加し、
+  アプリ同士は相互到達不可（[06-selection.md 6章](docs/catchup/server-onboarding/06-selection.md#6-ネットワーク分離の設計第一候補に組み込む)）
+- **Docker socket 不要**。ルーティング定義は `stacks/*/docker-compose.yml` の
+  `labels`（`site.host` / `site.upstream` / `site.port`）に置き、
+  `scripts/gen-nginx-conf.py` が compose ファイルを読むだけで vhost を生成する
+  （[06-selection.md A'](docs/catchup/server-onboarding/06-selection.md#a-nginx--ラベル駆動の生成スクリプト)）
+- **`resolver` + 変数 `proxy_pass`** により、1 アプリが落ちていても nginx は
+  起動・リロードできる（[03-nginx-modularization.md](docs/catchup/server-onboarding/03-nginx-modularization.md#level-2--resolver--変数-proxy_pass-で起動時依存を断つ)）
+- **アプリ側が言及されていないサービスを追加すると `default` ネットワークに分断される**
+  問題は、`gen-nginx-conf.py` がエラーで検知する（未然に壊れたまま気づかないことを防ぐ）
+- アプリ側 compose 自身が独自の `networks:` を宣言している場合（例: `nature-controler`）、
+  素直に override すると連結マージされて元のネットワークにも残ってしまうため、
+  `networks: !override` で完全に置き換える（`scripts/new-app.sh` の雛形は常にこの形）
+- 生成物の扱い: `core/nginx/conf.d/*.conf`（vhost）は**コミットする**。
+  git diff でレビューできるようにするため
+  （`compose.generated.yaml` は `stacks/` の一覧そのものなので gitignore）
 
 ## 新しいアプリケーションの追加方法
 
-新しいアプリケーションをNginxに登録する際は、`template/template.conf` をベースに設定ファイルを作成します。
-
-### ステップ1: テンプレートファイルをコピー
-
-リポジトリのルートディレクトリから以下のコマンドを実行します：
-
 ```bash
-cp nginx/template/template.conf nginx/conf.d/your_app_name.conf
+# 1. アプリを兄弟ディレクトリにクローン（例）
+git clone <アプリのgit URL> ../my-app
+
+# 2. stacks/<app名>/docker-compose.yml を生成
+./scripts/new-app.sh my-app ../my-app deploy/docker-compose.yaml <サービス名> my-app 3000
+
+# 3. アプリ側 compose に override していないサービス（DB 等）があれば
+#    stacks/my-app/docker-compose.yml に追記して net-my-app に載せる
+
+# 4. 起動（conf 生成 → up -d → nginx -t && reload まで一括）
+./scripts/up.sh
 ```
 
-### ステップ2: 設定ファイルを編集
-
-`conf.d/your_app_name.conf` を開き、以下の項目を変更します：
-
-#### 変更する項目：
-
-1. **upstream名** (`your_app_backend`): アプリケーションを識別する名前に変更
-2. **server**: アプリケーションのコンテナ名とポート番号を指定
-   - `your_app_container`: Dockerコンテナ名（docker-composeで定義された名前）
-   - `port_number`: アプリケーションがリッスンしているポート番号
-3. **server_name**: アプリケーションにアクセスするためのサブドメイン
-   - 例: `api.localhost`, `admin.localhost`, `app1.localhost` など
-4. **proxy_pass**: upstreamの名前と一致させる（`http://`を前置、末尾に`/`を付ける）
-
-### ステップ3: Nginxコンテナを再起動
-
-設定ファイルを追加・変更したら、Nginxコンテナを再起動して設定を反映します：
-
-```bash
-docker compose -f nginx/docker-compose.yml restart nginx
-```
-
-または、設定ファイルの構文をチェックしてからリロード：
-
-```bash
-docker compose -f nginx/docker-compose.yml exec nginx nginx -t
-
-# 問題がなければリロード
-docker compose -f nginx/docker-compose.yml exec nginx nginx -s reload
-```
-
-### 設定例
-
-例えば、`blog`というアプリケーションをポート3001で実行している場合：
-
-```nginx
-upstream blog_backend {
-    server blog:3001;
-}
-
-# サブドメイン設定
-server {
-    listen 80;
-    server_name blog.localhost;
-
-    location / {
-        proxy_pass http://blog_backend/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-この設定により、`http://blog.localhost/` にアクセスすると、`blog`コンテナのポート3001にプロキシされます。
-
-## 注意事項
-
-- アプリケーション自体は別のリポジトリで管理されます
-- アプリケーションのDockerコンテナは、Nginxと同じ `webnet` ネットワークに接続する必要があります
-- 複数のアプリケーションを追加する場合は、各アプリケーションごとに別々の設定ファイルを作成してください
-- サブドメイン（`*.localhost`）は開発環境でのアクセスに使用されます
-  - 本番環境では適切なドメイン名に変更してください
+`https://my-app.ubuntu.local/` でアクセスできる。停止は `./scripts/down.sh`。
 
 ## サーバーの起動
 
-### Docker Composeを使用
-
-リポジトリのルートディレクトリから以下のコマンドを実行します：
+### 手動
 
 ```bash
-docker compose -f nginx/docker-compose.yml up -d
+./scripts/up.sh
 ```
 
-### systemdを使用（自動起動設定）
-
-リポジトリのルートディレクトリから以下のコマンドを実行します：
+### systemd（自動起動設定）
 
 ```bash
-# サービスファイルをコピー
-sudo cp $(pwd)/nginx/systemd/user/nginx-stack.service /etc/systemd/system/
-
-# サービスファイル内のWorkingDirectoryを環境に合わせて編集
-sudo sed -i "s|WorkingDirectory=.*|WorkingDirectory=$(pwd)/nginx|g" /etc/systemd/system/nginx-stack.service
-
-# systemdデーモンをリロード
-sudo systemctl daemon-reload
-
-# サービスを有効化して起動
-sudo systemctl enable nginx-stack.service
-sudo systemctl start nginx-stack.service
-
-# ステータス確認
-sudo systemctl status nginx-stack.service
+cd core/systemd
+chmod +x install-service.sh
+./install-service.sh
 ```
+
+詳細は [core/systemd/README.md](core/systemd/README.md) を参照。
+
+起動するアプリを固定したい場合は `.env` に `COMPOSE_PROFILES` を書く
+（`stacks/*/docker-compose.yml` 側で `profiles:` を設定している場合）。
+
+## DNS・TLS
+
+- `*.ubuntu.local` のワイルドカード DNS: [core/dnsmasq/README.md](core/dnsmasq/README.md)
+- mkcert によるローカル TLS 証明書: [core/nginx/ssl/README.md](core/nginx/ssl/README.md)
+
+いずれもサブドメインを増やすたびの再設定は不要（ワイルドカード対応済み）。
+証明書のワイルドカードは 1 階層のみ有効なので、サブドメインは 1 階層で運用すること。
 
 ## ヘルスチェック
 
-サーバーが正常に動作しているか確認：
-
 ```bash
 curl http://localhost/health
-# 出力: OK
+curl -k https://ubuntu.local/health
 ```
+
+## 詳細ドキュメント
+
+設計調査の全体像・実測検証・実装 TODO は
+[docs/catchup/server-onboarding/](docs/catchup/server-onboarding/README.md) にまとめてある。

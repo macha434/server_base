@@ -24,8 +24,9 @@ fi
 echo "=== ubuntu.local専用DNSサーバーのセットアップ ==="
 echo "IPアドレス: $IP_ADDRESS"
 
-# スクリプトのディレクトリに移動
+# core/dnsmasq/ に移動
 cd "$(dirname "$0")"
+CORE_DIR="$(cd .. && pwd)"
 
 # 1. dnsmasq.confを生成
 echo ""
@@ -63,10 +64,10 @@ EOF
 
 echo "✓ dnsmasq.confを生成しました"
 
-# 2. dnsmasqコンテナを起動
+# 2. dnsmasqコンテナを起動（core/compose.yaml 経由）
 echo ""
 echo "2. dnsmasqコンテナを起動しています..."
-docker compose up -d dnsmasq
+docker compose -f "$CORE_DIR/compose.yaml" up -d dnsmasq
 
 # コンテナが起動するまで少し待つ
 sleep 2

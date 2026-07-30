@@ -1,0 +1,50 @@
+# stacks/
+
+アプリを 1 個追加する単位。`scripts/new-app.sh` が雛形を生成する。
+
+```bash
+./scripts/new-app.sh <app名> <リポジトリパス> <composeファイル> <サービス名> <サブドメイン> <ポート>
+```
+
+## 前提
+
+- アプリ側リポジトリは server_base の**兄弟ディレクトリ**にクローンする
+  （`include` の相対パスが固定されるため）
+- アプリ側リポジトリは一切改変しない
+- 1 stacks ファイル = 1 つの専用ネットワーク（信頼境界）が基本単位。
+  複数アプリを同じネットワークに同居させたい場合は
+  [06-selection.md 6章](../docs/catchup/server-onboarding/06-selection.md#複数アプリを同じ網に入れたくなったら)
+  を参照
+
+## 命名規約
+
+- `stacks/<app名>/docker-compose.yml` の `<app名>` は小文字英数字とハイフンのみ
+- サービスに `aliases: [<app名>]` を必ず付ける。nginx は全アプリの専用ネットワークに
+  参加するため、アプリ側のサービス名が `web` / `app` のような一般名だと衝突しうる。
+  一意な alias を与えることで回避する
+- `labels.site.upstream` は alias と一致させる（`scripts/gen-nginx-conf.py` が読む）
+
+## 注意: アプリ側 compose が独自の `networks:` を宣言している場合
+
+多くのアプリ（例: [time-announcement-frontend](../docs/catchup/server-onboarding/01-current-state.md)）は
+`networks:` を宣言しないため Compose の暗黙の `default` に乗る。この場合は
+override で `networks:` を足すだけで元のネットワークへの参加は自動的に消える。
+
+一方、アプリ側 compose が **明示的に** 独自ネットワーク（例: `webnet`）を宣言している場合
+（例: `nature-controler`）、素直に `networks:` を足すと **連結マージされて元のネットワークにも
+残ってしまう**（実測で確認済み）。この場合は `networks: !override` で完全に置き換える必要がある。
+
+`scripts/new-app.sh` は常に `!override` を使った雛形を生成するため、
+どちらのケースでも安全に動作する。
+
+## サービスを追記する必要があるケース
+
+アプリ側リポジトリが後から DB 等のサービスを追加すると、stacks ファイルで
+言及していないサービスは `default` ネットワークに落ちて本体から分断される。
+`scripts/gen-nginx-conf.py` がこれを検出してエラーで止まるので、
+指摘されたサービスをこのファイルに追記して `net-<app名>` に載せること。
+
+## 起動
+
+`stacks/*/docker-compose.yml` を置くだけでよい。起動は `scripts/up.sh` が
+`stacks/*/docker-compose.yml` を自動で拾う（`scripts/render-compose.sh` 参照）。

@@ -13,10 +13,10 @@
 
 ```bash
 # 証明書生成スクリプトに実行権限を付与
-chmod +x nginx/ssl/generate-cert.sh
+chmod +x core/nginx/ssl/generate-cert.sh
 
 # 証明書を生成（ubuntu.localドメイン用）
-cd nginx/ssl
+cd core/nginx/ssl
 ./generate-cert.sh ubuntu.local
 ```
 
@@ -67,14 +67,11 @@ avahi-browse -a -t
 ### 4. Nginxコンテナの起動
 
 ```bash
-# nginx ディレクトリに移動
-cd /workspace/nginx
-
-# コンテナを起動
-docker compose up -d
+# リポジトリルートから起動スクリプトを実行
+./scripts/up.sh
 
 # ログを確認
-docker compose logs -f
+docker compose -f core/compose.yaml logs -f nginx
 ```
 
 ### 5. 証明書の信頼設定（クライアント側）
@@ -160,13 +157,12 @@ openssl s_client -connect ubuntu.local:443 -servername ubuntu.local
 # Chromeの場合: chrome://settings/clearBrowserData
 
 # 証明書を再生成
-cd /workspace/nginx/ssl
+cd core/nginx/ssl
 rm ubuntu.local-*.pem
 ./generate-cert.sh ubuntu.local
 
 # nginxを再起動
-cd /workspace/nginx
-docker compose restart
+docker compose -f core/compose.yaml restart nginx
 ```
 
 ### ubuntu.localに接続できない
@@ -189,13 +185,13 @@ sudo ufw allow 5353/udp  # mDNS用
 
 ```bash
 # ログを確認
-docker compose logs nginx
+docker compose -f core/compose.yaml logs nginx
 
 # 設定ファイルのシンタックスチェック
-docker compose exec nginx nginx -t
+docker compose -f core/compose.yaml exec nginx nginx -t
 
 # 証明書ファイルのパーミッション確認
-ls -la /workspace/nginx/ssl/
+ls -la core/nginx/ssl/
 ```
 
 ## セキュリティ注意事項

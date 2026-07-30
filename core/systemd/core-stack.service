@@ -1,0 +1,20 @@
+[Unit]
+Description=server_base core stack (nginx + dnsmasq) via docker compose
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=%h/server_base
+
+# scripts/up.sh が core/compose.yaml と stacks/*/docker-compose.yml を
+# まとめて展開し、nginx conf 生成 → up -d → nginx -t && reload まで行う
+ExecStart=%h/server_base/scripts/up.sh
+ExecStop=%h/server_base/scripts/down.sh
+
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=default.target

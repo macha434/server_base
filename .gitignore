@@ -1,4 +1,13 @@
-nginx/logs/
+core/nginx/logs/
+core/dnsmasq/dnsmasq.conf
+core/dnsmasq/logs/
+
+# scripts/render-compose.sh が毎回再生成するファイル（stacks/ の一覧そのものなのでコミット不要）
+compose.generated.yaml
+
+# scripts/gen-nginx-conf.py が生成する vhost (core/nginx/conf.d/*.conf) は
+# 意図的に .gitignore しない。生成物もコミットして git diff でレビューできるようにする
+# ([06-selection.md](docs/catchup/server-onboarding/06-selection.md) の方針)。
 
 # APM dependencies (apm.yml から `apm install` で再生成される)
 apm_modules/

@@ -1,0 +1,31 @@
+name: server-base
+
+# core/ は nginx・dnsmasq (ワイルドカード DNS) を含む基盤サービス一式。
+# アプリは stacks/<app名>/docker-compose.yml として別に追加し、
+# scripts/up.sh が core/compose.yaml と一緒に -f で展開する。
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    restart: always
+
+  dnsmasq:
+    image: jpillora/dnsmasq
+    container_name: dnsmasq-ubuntu-local
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "5380:8080" # Web UI
+    volumes:
+      - ./dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf:ro
+      - ./dnsmasq/logs:/var/log:rw
+    restart: always
+    cap_add:
+      - NET_ADMIN

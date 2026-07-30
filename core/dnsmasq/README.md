@@ -1,6 +1,6 @@
 # ubuntu.local 専用DNSサーバー
 
-ubuntu.localドメインとそのサブドメイン（`*.ubuntu.local`）を自動的に192.168.3.17に解決するDNSサーバーです。
+ubuntu.localドメインとそのサブドメイン（`*.ubuntu.local`）を自動的に指定したIPアドレスに解決するDNSサーバーです。
 
 ## 特徴
 
@@ -13,7 +13,7 @@ ubuntu.localドメインとそのサブドメイン（`*.ubuntu.local`）を自�
 ### 1. DNSサーバーを起動
 
 ```bash
-cd /workspace/dnsmasq
+cd core/dnsmasq
 chmod +x setup-dns.sh
 
 # IPアドレスを指定して起動（必須）
@@ -25,7 +25,7 @@ chmod +x setup-dns.sh
 
 スクリプトは自動的に：
 1. IPアドレスに基づいて`dnsmasq.conf`を生成
-2. dnsmasqコンテナを起動
+2. `core/compose.yaml` 経由で dnsmasq コンテナを起動
 3. DNS解決をテスト
 
 ### 2. システムのDNS設定
@@ -67,21 +67,14 @@ nslookup nature.ubuntu.local
 nslookup api.ubuntu.local
 ```
 
-全て `192.168.3.17` に解決されれば成功です。
+全て `setup-dns.sh` に渡したIPアドレスに解決されれば成功です。
 
 ## 管理
 
 ### systemdユーザーサービスとして管理（推奨）
 
-ログイン時に自動起動させたい場合は、systemdユーザーサービスとしてインストールします：
-
-```bash
-cd /workspace/dnsmasq/systemd
-chmod +x install-service.sh
-./install-service.sh
-```
-
-詳細は[systemd/README.md](systemd/README.md)を参照してください。
+`core/` 配下の nginx・dnsmasq は 1 つの systemd unit でまとめて管理します。
+[core/systemd/README.md](../systemd/README.md) を参照してください。
 
 ### Web UI
 
@@ -90,19 +83,19 @@ http://localhost:5380 で管理画面にアクセスできます。
 ### ログ確認
 
 ```bash
-docker-compose logs -f dnsmasq
+docker compose -f core/compose.yaml logs -f dnsmasq
 ```
 
 ### 再起動
 
 ```bash
-docker-compose restart
+docker compose -f core/compose.yaml restart dnsmasq
 ```
 
 ### 停止
 
 ```bash
-docker-compose down
+docker compose -f core/compose.yaml down
 ```
 
 新しいIPアドレスでセットアップスクリプトを再実行：
@@ -111,16 +104,7 @@ docker-compose down
 ./setup-dns.sh 新しいIPアドレス
 ```
 
-例：
-```bash
-./setup-dns.sh 127.0.0.1
-```
-
-これにより`dnsmasq.conf`が再生成され、コンテナが再起動されます。は再起動：
-
-```bash
-docker-compose restart
-```
+これにより `dnsmasq.conf` が再生成され、コンテナが再起動されます。
 
 ## トラブルシューティング
 

@@ -1,0 +1,30 @@
+# time-announcement を server_base 配下で動かすための差分。
+# アプリ側リポジトリ (../time-announcement-frontend) は改変しない。
+include:
+  - path: ../../../time-announcement-frontend/deploy/docker-compose.yaml
+    project_directory: ../../../time-announcement-frontend/deploy
+
+services:
+  schedule-ui:
+    # nginx から到達できるよう専用ネットワークに載せる。
+    # aliases で一意な upstream 名を明示する（nginx は全網に参加するため名前衝突を避ける）
+    # !override: アプリ側 compose 自身が独自の networks を宣言している場合、単純に
+    # 追記すると連結マージされて元のネットワークにも残ってしまう。完全に置き換える。
+    networks: !override
+      net-time-announcement:
+        aliases: [time-announcement]
+    # ホストへの publish を取り消す（nginx/TLS 経由のみに強制、ポート採番も不要に）
+    ports: !reset []
+    # scripts/gen-nginx-conf.py が読む vhost 定義
+    labels:
+      site.host: time.ubuntu.local
+      site.upstream: time-announcement
+      site.port: "3000"
+
+  # nginx をこのアプリ専用網に参加させる（他の stacks ファイルとは連結マージされる）
+  nginx:
+    networks: [net-time-announcement]
+
+networks:
+  net-time-announcement:
+    name: net-time-announcement
