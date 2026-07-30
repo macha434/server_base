@@ -1,6 +1,9 @@
 nginx/logs/
 
-# APM dependencies・生成物 (apm.yml から `apm install` で再生成される)
+# APM dependencies (apm.yml から `apm install` で再生成される)
 apm_modules/
-.claude/
 .mcp.json
+
+# Python バイトコードキャッシュ (環境依存の生成物)
+__pycache__/
+*.pyc
