@@ -72,6 +72,51 @@ server_base/
 - 生成物の扱い: `core/nginx/conf.d/*.ubuntu.local.conf`（vhost）・`compose.generated.yaml` は
   どちらも `stacks/*/docker-compose.yml` から都度再生成できるため gitignore（コミット不要）
 
+## 初回セットアップ（サーバーの立ち上げ）
+
+前提: Docker・Docker Compose がインストールされていること。
+
+```bash
+# 1. server_base とアプリ側リポジトリを兄弟ディレクトリにクローン（上記「構成」参照）
+git clone <server_baseのURL> server_base
+git clone https://github.com/macha434/nature-controler nature-controler
+git clone https://github.com/coresync-fukuhara/time-announcement-frontend time-announcement-frontend
+cd server_base
+
+# 2. *.ubuntu.local のワイルドカードDNSを起動（サーバー自身のLAN IPを指定）
+./core/dnsmasq/setup-dns.sh 192.168.1.100
+
+# 3. TLS証明書を生成（前提はDockerのみ。mkcertのホストインストールは不要）
+./scripts/generate-cert.sh ubuntu.local
+
+# 4. 起動（conf生成 → core(nginx・dnsmasq)を先に起動 → アプリを起動 → nginx -t && reload）
+./scripts/up.sh
+```
+
+続けて以下も設定する:
+
+- **クライアント側のDNS設定**: [core/dnsmasq/README.md](core/dnsmasq/README.md) の
+  「2. システムのDNS設定」を参照（`/etc/hosts` 編集は不要）
+- **クライアント側の証明書信頼設定**: [core/nginx/README.md](core/nginx/README.md) の
+  「3. 証明書の信頼設定」を参照
+- **ログイン時の自動起動**（任意）: systemd ユーザーサービスとして登録する
+
+  ```bash
+  ./core/systemd/install-service.sh
+  ```
+
+  詳細は [core/systemd/README.md](core/systemd/README.md) を参照。
+
+動作確認:
+
+```bash
+curl http://localhost/health
+curl -k https://ubuntu.local/health
+```
+
+証明書エラーが出ずに `https://nature.ubuntu.local/` `https://time.ubuntu.local/` に
+アクセスできれば完了。停止は `./scripts/down.sh`。
+
 ## 新しいアプリケーションの追加方法
 
 ```bash
@@ -92,41 +137,29 @@ git clone <アプリのgit URL> ../my-app
 
 `https://my-app.ubuntu.local/` でアクセスできる。停止は `./scripts/down.sh`。
 
-## サーバーの起動
+## 日常操作
 
-### 手動
-
-```bash
-./scripts/up.sh
-```
-
-### systemd（自動起動設定）
+初回セットアップ後の、通常時の起動・停止・確認コマンド。
 
 ```bash
-cd core/systemd
-chmod +x install-service.sh
-./install-service.sh
-```
+./scripts/up.sh      # 起動（conf生成 → core → アプリ → nginx -t && reload）
+./scripts/down.sh     # 停止
 
-詳細は [core/systemd/README.md](core/systemd/README.md) を参照。
-
-起動するアプリを固定したい場合は `.env` に `COMPOSE_PROFILES` を書く
-（`stacks/*/docker-compose.yml` 側で `profiles:` を設定している場合）。
-
-## DNS・TLS
-
-- `*.ubuntu.local` のワイルドカード DNS: [core/dnsmasq/README.md](core/dnsmasq/README.md)
-- mkcert によるローカル TLS 証明書: [core/nginx/README.md](core/nginx/README.md)
-
-いずれもサブドメインを増やすたびの再設定は不要（ワイルドカード対応済み）。
-証明書のワイルドカードは 1 階層のみ有効なので、サブドメインは 1 階層で運用すること。
-
-## ヘルスチェック
-
-```bash
 curl http://localhost/health
 curl -k https://ubuntu.local/health
 ```
+
+systemdユーザーサービスとして登録済みなら、`systemctl --user {start,stop,restart}
+core-stack` でも同様に操作できる（詳細は [core/systemd/README.md](core/systemd/README.md)）。
+
+起動するアプリを固定したい場合は `.env` に `COMPOSE_PROFILES` を書く
+（`stacks/*/docker-compose.yml` 側で `profiles:` を設定している場合。デフォルトでは
+`profiles:` を設定していないアプリは常に全部起動する）。
+
+`*.ubuntu.local` のDNS・TLSはサブドメインを増やすたびの再設定は不要（ワイルドカード
+対応済み）。証明書のワイルドカードは1階層のみ有効なので、サブドメインは1階層で
+運用すること（詳細は [core/dnsmasq/README.md](core/dnsmasq/README.md)・
+[core/nginx/README.md](core/nginx/README.md)）。
 
 ## 詳細ドキュメント
 
