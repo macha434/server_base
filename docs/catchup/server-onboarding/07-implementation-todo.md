@@ -221,3 +221,10 @@
   証明書を再配置する必要はない。あわせて `generate-cert.sh` は他の運用スクリプトと
   同じ `scripts/` 配下に移し(出力先は常に `<repo root>/ssl/` を指すよう固定)、
   `ssl/` はデータ専用ディレクトリにした。
+- **`scripts/gen-nginx-conf.py` が生成する vhost (`core/nginx/conf.d/*.ubuntu.local.conf`)
+  は方針転換してコミット対象から外した。** 当初は「生成物もコミットして git diff で
+  レビューできるようにする」方針だった([06-selection.md](./06-selection.md)参照)が、
+  `stacks/*/docker-compose.yml` の labels から `scripts/up.sh` 実行時に毎回再生成される
+  ため、コミットしても差分がノイズになるだけと判断し `.gitignore` に追加(実ファイルは
+  そのまま残し `git rm --cached` で追跡のみ解除)。`00-http.conf`・`default.conf` など
+  手書きファイルは引き続きコミット対象。
