@@ -1,4 +1,27 @@
-nginx/logs/
+core/nginx/logs/
+core/dnsmasq/dnsmasq.conf
+core/dnsmasq/logs/
+
+# mkcert が生成するSSL証明書とキーファイル（ssl/ ディレクトリ自体は .gitkeep で保持）
+ssl/*.pem
+ssl/*.key
+ssl/*.crt
+ssl/*.csr
+# mkcertのローカルCA(rootCA.pem/rootCA-key.pem)。scripts/generate-cert.sh が
+# ssl/mkcert-ca/ に永続化して使い回す秘密鍵なのでコミットしない。
+ssl/mkcert-ca/
+
+# scripts/render-compose.sh が毎回再生成するファイル（stacks/ の一覧そのものなのでコミット不要）
+compose.generated.yaml
+
+# docker compose が読む環境変数ファイル(COMPOSE_PROFILES等)。環境ごとに異なるためコミット不要
+.env
+
+# scripts/gen-nginx-conf.py が生成する vhost (core/nginx/conf.d/<host>.conf) は
+# stacks/*/docker-compose.yml の labels から都度再生成できるためコミット不要。
+# site.host は必ず <app>.ubuntu.local の形になる運用のため、このパターンで
+# 手書きの 00-http.conf・default.conf とは区別している。
+core/nginx/conf.d/*.ubuntu.local.conf
 
 # APM dependencies (apm.yml から `apm install` で再生成される)
 apm_modules/

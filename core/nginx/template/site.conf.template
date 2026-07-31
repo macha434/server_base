@@ -1,0 +1,22 @@
+server {
+    listen      443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name __HOST__;
+
+    include conf.d/snippets/ssl.conf;
+    include conf.d/snippets/security.conf;
+
+    location / {
+        set $upstream http://__UPSTREAM__:__PORT__;
+        proxy_pass $upstream;
+        include conf.d/snippets/proxy.conf;
+    }
+}
+
+server {
+    listen      80;
+    listen [::]:80;
+    server_name __HOST__;
+    return 301 https://$host$request_uri;
+}

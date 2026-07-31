@@ -8,14 +8,18 @@
 2. コマンドパレット（Ctrl+Shift+P）を開く
 3. "Dev Containers: Reopen in Container" を選択
 
-### 2. Nginxを起動
+### 2. core スタックを起動
 
 Dev Container内のターミナルで以下を実行：
 
 ```bash
-cd /workspace/nginx
-docker compose up -d
+cd /workspace
+./scripts/up.sh
 ```
+
+`workspace` コンテナはホストの `/var/run/docker.sock` をマウントしているため、
+`core/compose.yaml`（nginx + dnsmasq）と `stacks/*/docker-compose.yml` はホスト側の
+Docker デーモン上にそのまま起動する。
 
 ### 3. 動作確認
 
@@ -23,8 +27,8 @@ docker compose up -d
 # ヘルスチェック
 curl http://localhost/health
 
-# natureアプリ（外部で起動している場合）
-curl http://nature.localhost/
+# アプリ経由（stacks に追加済みの場合）
+curl -k https://time.ubuntu.local/
 ```
 
 ## 開発環境の構成
@@ -32,52 +36,54 @@ curl http://nature.localhost/
 ```
 .devcontainer/
 ├── devcontainer.json       # Dev Container設定
-└── docker-compose.yml      # 開発環境用コンテナ構成
+└── docker-compose.yml      # workspace コンテナのみ定義（nginx/dnsmasq は core/ 側）
 
-nginx/
-├── conf.d/                 # Nginx設定ファイル
-├── logs/                   # ログ出力先
-├── ssl/                    # SSL証明書（オプション）
-└── docker-compose.yml      # Nginx本体のdocker-compose
+core/                        # nginx + dnsmasq (composition root)
+stacks/                      # アプリごとの override
+scripts/                     # up.sh / down.sh / new-app.sh / gen-nginx-conf.py
 ```
+
+> 以前は `.devcontainer/docker-compose.yml` 自身が `nginx-dev`（`:80`/`:443` を publish）を
+> 持っていたが、`core/compose.yaml` の nginx と同じポートを取り合うため廃止した。
+> Dev Container 内でも `core/compose.yaml` 側の nginx をそのまま使う。
 
 ## ネットワーク
 
-- Dev Container: `devnet` ネットワーク
-- 外部アプリケーション: `webnet` ネットワーク（nginx/docker-compose.yml）
+- Dev Container 自体: `devnet` ネットワーク（`workspace` コンテナ専用）
+- アプリ用ネットワーク: `net-<app名>`（`stacks/<app名>/docker-compose.yml` が宣言し、nginx だけが全網に参加する）
 
-外部で起動するアプリケーションコンテナは `webnet` ネットワークに接続してください。
+フラットな共有ネットワーク（旧 `webnet`）は廃止し、アプリごとに専用ネットワークを切る構成にした。
+詳細は [docs/catchup/server-onboarding/06-selection.md](../docs/catchup/server-onboarding/06-selection.md#6-ネットワーク分離の設計第一候補に組み込む) を参照。
 
 ## 便利なコマンド
 
 ```bash
-# Nginxの再起動
-cd /workspace/nginx && docker compose restart nginx
+# 停止
+./scripts/down.sh
 
-# Nginx設定のテスト
-docker exec nginx-dev nginx -t
+# nginx の設定テスト
+docker compose -f compose.generated.yaml exec nginx nginx -t
 
-# Nginxログの確認
-tail -f /workspace/nginx/logs/access.log
-tail -f /workspace/nginx/logs/error.log
+# nginx ログの確認
+tail -f core/nginx/logs/access.log
+tail -f core/nginx/logs/error.log
 ```
 
 ## トラブルシューティング
 
 ### ポートが既に使用されている
 
-Dev Containerを開く前に、ホスト側のNginxを停止してください：
+Dev Containerを開く前に、ホスト側で起動している core スタックを停止してください：
 
 ```bash
 # ホスト側で実行
-cd nginx
-docker compose down
+./scripts/down.sh
 ```
 
 ### アプリケーションコンテナに接続できない
 
-外部のアプリケーションコンテナが `webnet` ネットワークに接続されているか確認：
+アプリが所属する専用ネットワークに nginx も参加しているか確認：
 
 ```bash
-docker network inspect webnet
+docker network inspect net-<app名>
 ```
