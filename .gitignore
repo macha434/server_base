@@ -2,6 +2,12 @@ core/nginx/logs/
 core/dnsmasq/dnsmasq.conf
 core/dnsmasq/logs/
 
+# mkcert が生成するSSL証明書とキーファイル（ssl/ ディレクトリ自体は .gitkeep で保持）
+ssl/*.pem
+ssl/*.key
+ssl/*.crt
+ssl/*.csr
+
 # scripts/render-compose.sh が毎回再生成するファイル（stacks/ の一覧そのものなのでコミット不要）
 compose.generated.yaml
 
