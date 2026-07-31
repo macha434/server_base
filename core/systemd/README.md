@@ -33,10 +33,10 @@ cd core/systemd
 `.env` に `COMPOSE_PROFILES` を書いてログイン時に起動するアプリを制御できます。
 
 ```dotenv
-COMPOSE_PROFILES=time-announcement,nature
+COMPOSE_PROFILES=time-announcement
 ```
 
-**注意:** 現状の `stacks/nature`・`stacks/time-announcement` はどちらも `profiles:` を
-設定していないため、`COMPOSE_PROFILES` を設定しても効果はなく、常に全アプリが起動します。
+**注意:** 現状の `stacks/time-announcement` は `profiles:` を設定していないため、
+`COMPOSE_PROFILES` を設定しても効果はなく、常に全アプリが起動します。
 特定アプリだけ起動を制御したい場合は、まず対象の `stacks/<app名>/docker-compose.yml` に
 `profiles:` を追加すること。

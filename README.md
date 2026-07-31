@@ -36,20 +36,19 @@ server_base/
     ├── render-compose.sh         # core + stacks を include でまとめた compose.generated.yaml を生成
     ├── generate-cert.sh          # mkcert同梱コンテナで ssl/ に証明書を生成(前提はDockerのみ)
     ├── mkcert.Dockerfile
+    ├── setup-dns.sh              # core/dnsmasq/ の *.ubuntu.local ワイルドカードDNSをセットアップ
     ├── up.sh                     # conf生成 → up -d → nginx -t && reload
     └── down.sh
 ```
 
 アプリ側リポジトリは server_base の**兄弟ディレクトリ**にクローンする前提（`include` の
-相対パスが固定されるため）。`stacks/` に同梱されている `nature`・`time-announcement` の
-2つのサンプルスタックは、どちらも対応するアプリ側リポジトリが兄弟ディレクトリに
-無いと `./scripts/up.sh` がそのまま失敗する。最小構成で試す場合は両方クローンするか、
-不要な方を `stacks/` から一時的に退避すること:
+相対パスが固定されるため）。`stacks/` に同梱されている `time-announcement` サンプル
+スタックは、対応するアプリ側リポジトリが兄弟ディレクトリに無いと `./scripts/up.sh` が
+そのまま失敗する。最小構成で試す場合はクローンするか、`stacks/` から一時的に退避すること:
 
 ```
 /opt/                                     ← 任意のベースディレクトリ
 ├── server_base/
-├── nature-controler/                     # 改変しない (git clone したまま)
 └── time-announcement-frontend/           # 改変しない (git clone したまま)
     └── deploy/docker-compose.yaml
 ```
@@ -66,7 +65,7 @@ server_base/
   起動・リロードできる（[03-nginx-modularization.md](docs/catchup/server-onboarding/03-nginx-modularization.md#level-2--resolver--変数-proxy_pass-で起動時依存を断つ)）
 - **アプリ側が言及されていないサービスを追加すると `default` ネットワークに分断される**
   問題は、`gen-nginx-conf.py` がエラーで検知する（未然に壊れたまま気づかないことを防ぐ）
-- アプリ側 compose 自身が独自の `networks:` を宣言している場合（例: `nature-controler`）、
+- アプリ側 compose 自身が独自の `networks:` を宣言している場合、
   素直に override すると連結マージされて元のネットワークにも残ってしまうため、
   `networks: !override` で完全に置き換える（`scripts/new-app.sh` の雛形は常にこの形）
 - 生成物の扱い: `core/nginx/conf.d/*.ubuntu.local.conf`（vhost）・`compose.generated.yaml` は
@@ -79,12 +78,11 @@ server_base/
 ```bash
 # 1. server_base とアプリ側リポジトリを兄弟ディレクトリにクローン（上記「構成」参照）
 git clone <server_baseのURL> server_base
-git clone https://github.com/macha434/nature-controler nature-controler
 git clone https://github.com/coresync-fukuhara/time-announcement-frontend time-announcement-frontend
 cd server_base
 
-# 2. *.ubuntu.local のワイルドカードDNSを起動（サーバー自身のLAN IPを指定）
-./core/dnsmasq/setup-dns.sh 192.168.1.100
+# 2. *.ubuntu.local のワイルドカードDNSを起動（IPアドレスは省略するとLAN IPを自動検出する）
+./scripts/setup-dns.sh
 
 # 3. TLS証明書を生成（前提はDockerのみ。mkcertのホストインストールは不要）
 ./scripts/generate-cert.sh ubuntu.local
@@ -114,8 +112,8 @@ curl http://localhost/health
 curl -k https://ubuntu.local/health
 ```
 
-証明書エラーが出ずに `https://nature.ubuntu.local/` `https://time.ubuntu.local/` に
-アクセスできれば完了。停止は `./scripts/down.sh`。
+証明書エラーが出ずに `https://time.ubuntu.local/` にアクセスできれば完了。
+停止は `./scripts/down.sh`。
 
 ## 新しいアプリケーションの追加方法
 

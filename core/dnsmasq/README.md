@@ -5,7 +5,7 @@ ubuntu.localドメインとそのサブドメイン（`*.ubuntu.local`）を自�
 ## 特徴
 
 - **ubuntu.localドメイン専用**: 他のドメインには影響しません
-- **ワイルドカード対応**: `nature.ubuntu.local`, `api.ubuntu.local` など全てのサブドメインを自動解決
+- **ワイルドカード対応**: `time.ubuntu.local`, `api.ubuntu.local` など全てのサブドメインを自動解決
 - **/etc/hosts編集不要**: システムのDNS設定のみで動作
 
 ## セットアップ
@@ -14,13 +14,13 @@ ubuntu.localドメインとそのサブドメイン（`*.ubuntu.local`）を自�
 
 ```bash
 # リポジトリルートから実行する
-chmod +x core/dnsmasq/setup-dns.sh
+chmod +x scripts/setup-dns.sh
 
-# IPアドレスを指定して起動（必須）
-./core/dnsmasq/setup-dns.sh 127.0.0.1
+# IPアドレスを省略すると、外部への経路に使われるLAN IPを自動検出する
+./scripts/setup-dns.sh
 
-# または別のIPアドレス
-./core/dnsmasq/setup-dns.sh 192.168.1.100
+# IPアドレスを明示指定することもできる（自動検出結果が意図と違う場合など）
+./scripts/setup-dns.sh 192.168.1.100
 ```
 
 スクリプトは自動的に：
@@ -63,11 +63,12 @@ EOF
 
 ```bash
 nslookup ubuntu.local
-nslookup nature.ubuntu.local
+nslookup time.ubuntu.local
 nslookup api.ubuntu.local
 ```
 
-全て `setup-dns.sh` に渡したIPアドレスに解決されれば成功です。
+全て `scripts/setup-dns.sh` で設定したIPアドレス（自動検出 or 明示指定）に
+解決されれば成功です。
 
 ## 管理
 
@@ -98,10 +99,10 @@ docker compose -f core/compose.yaml restart dnsmasq
 docker compose -f core/compose.yaml down
 ```
 
-新しいIPアドレスでセットアップスクリプトを再実行：
+新しいIPアドレスでセットアップスクリプトを再実行（リポジトリルートから）：
 
 ```bash
-./setup-dns.sh 新しいIPアドレス
+./scripts/setup-dns.sh 新しいIPアドレス
 ```
 
 これにより `dnsmasq.conf` が再生成され、コンテナが再起動されます。

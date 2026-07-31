@@ -3,35 +3,42 @@
 
 set -e
 
-# IPアドレスを引数から取得（必須）
-if [ -z "$1" ]; then
-    echo "エラー: IPアドレスが指定されていません"
-    echo "使用方法: $0 <IPアドレス>"
-    echo "例: $0 127.0.0.1"
-    exit 1
-fi
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+DNSMASQ_DIR="$ROOT/core/dnsmasq"
 
-IP_ADDRESS="$1"
+# IPアドレスは引数で明示指定できる。省略した場合は、外部への経路に使われる
+# インターフェースのIPアドレスを自動検出する（LAN内から到達できるIPが欲しいため、
+# 127.0.0.1 ではなく実際のLAN IPを既定値にする）。
+IP_ADDRESS="${1:-}"
+if [ -z "$IP_ADDRESS" ]; then
+    if ! command -v ip &> /dev/null; then
+        echo "エラー: IPアドレスの自動検出には 'ip' コマンドが必要です（iproute2）。" >&2
+        echo "自動検出できない環境では引数で明示してください: $0 <IPアドレス>" >&2
+        exit 1
+    fi
+    IP_ADDRESS="$(ip -4 route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || true)"
+    if [ -z "$IP_ADDRESS" ]; then
+        echo "エラー: IPアドレスの自動検出に失敗しました。引数で明示してください: $0 <IPアドレス>" >&2
+        exit 1
+    fi
+    echo "IPアドレスを自動検出しました: $IP_ADDRESS"
+fi
 
 # IPアドレスの検証
 if ! [[ $IP_ADDRESS =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     echo "エラー: 無効なIPアドレスです: $IP_ADDRESS"
-    echo "使用方法: $0 <IPアドレス>"
-    echo "例: $0 127.0.0.1"
+    echo "使用方法: $0 [IPアドレス]"
+    echo "例: $0 192.168.1.100"
     exit 1
 fi
 
 echo "=== ubuntu.local専用DNSサーバーのセットアップ ==="
 echo "IPアドレス: $IP_ADDRESS"
 
-# core/dnsmasq/ に移動
-cd "$(dirname "$0")"
-CORE_DIR="$(cd .. && pwd)"
-
 # 1. dnsmasq.confを生成
 echo ""
 echo "1. dnsmasq.confを生成しています..."
-cat > dnsmasq.conf <<EOF
+cat > "$DNSMASQ_DIR/dnsmasq.conf" <<EOF
 # ubuntu.local 専用DNSサーバー設定
 # 自動生成日時: $(date)
 # IPアドレス: $IP_ADDRESS
@@ -67,7 +74,7 @@ echo "✓ dnsmasq.confを生成しました"
 # 2. dnsmasqコンテナを起動（core/compose.yaml 経由）
 echo ""
 echo "2. dnsmasqコンテナを起動しています..."
-docker compose -f "$CORE_DIR/compose.yaml" up -d dnsmasq
+docker compose -f "$ROOT/core/compose.yaml" up -d dnsmasq
 
 # コンテナが起動するまで少し待つ
 sleep 2
@@ -88,8 +95,8 @@ echo "4. DNS解決テスト..."
 echo "   ubuntu.local:"
 dig @127.0.0.1 ubuntu.local +short 2>/dev/null || nslookup ubuntu.local 127.0.0.1 2>/dev/null | grep Address | tail -1
 
-echo "   nature.ubuntu.local:"
-dig @127.0.0.1 nature.ubuntu.local +short 2>/dev/null || nslookup nature.ubuntu.local 127.0.0.1 2>/dev/null | grep Address | tail -1
+echo "   time.ubuntu.local:"
+dig @127.0.0.1 time.ubuntu.local +short 2>/dev/null || nslookup time.ubuntu.local 127.0.0.1 2>/dev/null | grep Address | tail -1
 
 echo ""
 echo "期待値: $IP_ADDRESS"
