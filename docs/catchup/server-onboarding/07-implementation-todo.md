@@ -44,6 +44,37 @@
   パッケージ版で `nginx -t` を実測）で確認・修正済み。`core/nginx/conf.d/default.conf`・
   `core/nginx/template/site.conf.template`・生成済みの `core/nginx/conf.d/*.ubuntu.local.conf`
   はすべて `include conf.d/snippets/...` に修正した。
+- **`include:` で取り込んだサービスを同じファイル内で上書きする(`services: nature: ...` +
+  `networks: !override` 等)パターンは、古い Docker Compose では動かない。**
+  実サーバーに入っていた Compose plugin v2.27.0（2024年5月ビルド）で実行すると、
+  1アプリだけの構成でも `services.nature conflicts with imported resource` で
+  即座に失敗する（`include` 元・`include` 先が同じファイルでも、別ファイル同士の
+  sibling `include:` 同士でも同様に失敗した。多階層に検証して確認済み）。
+  Compose v5.3.1 に入れ替えると同じリポジトリのファイルのまま何も変更せずに解決した。
+  → **`core/compose.yaml` の `include:` ベースの上書きが機能するには、比較的新しい
+  Docker Compose CLI plugin が必須**（v2.27.0 では不可、v5.3.1 で動作確認済み。
+  正確な最小バージョンは未特定）。system 全体の plugin (`/usr/libexec/docker/cli-plugins/`)
+  を書き換えるには root 権限が要るが、**`~/.docker/cli-plugins/docker-compose` に
+  ユーザー権限で置くだけで docker CLI がそちらを優先して使う**ため、sudo なしで
+  アップグレードできる。同様に `docker compose build`(schedule-ui・nature の
+  イメージビルド)には **buildx 0.17.0 以上が必須**で、実サーバーの buildx 0.14.0 では
+  `compose build requires buildx 0.17.0 or later` で失敗した。こちらも
+  `~/.docker/cli-plugins/docker-buildx` にユーザー権限で新しいバイナリを置いて解決した。
+  → 新しいサーバーにこの構成をデプロイする際は、事前に
+  `docker compose version` / `docker buildx version` を確認し、古ければ
+  `~/.docker/cli-plugins/` にユーザー権限で新しいバイナリを配置すること。
+- **`core-stack.service`（systemd `--user` unit）に `After=docker.service` /
+  `Requires=docker.service` を書くと `Unit docker.service not found` で起動に失敗する。**
+  `docker.service` は system 側の unit であり、`systemctl --user` の unit namespace
+  からは参照できない。旧構成の `nginx-stack.service` も同じ依存を宣言しており、
+  実は一度も systemd 経由では起動できておらず(`systemctl --user status` は
+  常に `inactive (dead)`)、コンテナは手動 `docker compose up -d` で起動されたまま
+  放置されていたことが実機で判明した(対照的に依存を書いていなかった
+  `dnsmasq-ubuntu-local.service` は `active (exited)` として正常に機能していた)。
+  → `core/systemd/core-stack.service` から `After=`/`Requires=docker.service` を削除。
+  また `WorkingDirectory`/`ExecStart`/`ExecStop` が `%h/server_base` 決め打ちだったが、
+  実サーバーでのリポジトリ配置は `~/Projects/server_base` だったため
+  `%h/Projects/server_base` に修正した。
 
 ## Phase 1: nginx 基盤の整理
 
@@ -93,10 +124,23 @@
 
 - [x] `time-announcement-frontend` を兄弟ディレクトリにクローンする
 - [x] `scripts/new-app.*` で `stacks/time-announcement/docker-compose.yml` を生成する
-- [ ] external volume(`time-announcement-settings` 等)をテスト用に用意する
-- [ ] 起動スクリプトを実行し、生成された nginx conf と起動結果を確認する
-- [ ] `https://time.ubuntu.local/` 相当で疎通確認する
+- [x] external volume(`time-announcement-settings` 等)をテスト用に用意する
+      → `time-announcement-settings` / `time-announcement-db` / `time-announcement-sounds`
+      の3つ(空の状態でOK。本番データはまだ存在しないため新規作成)
+- [x] 起動スクリプトを実行し、生成された nginx conf と起動結果を確認する
+- [x] `https://time.ubuntu.local/` 相当で疎通確認する
       (mkcert 証明書・dnsmasq のワイルドカード解決が機能することも合わせて確認)
+      → 2026-07-31、実サーバーで実施。旧 `/opt/server_base`(nginx・dnsmasq)・
+      `/opt/nature-controler` の3コンテナを停止した上で新構成を起動し、
+      `https://nature.ubuntu.local/` `https://time.ubuntu.local/` とも 200・
+      実アプリの HTML を確認。`dig @127.0.0.1 *.ubuntu.local` も 192.168.3.17 を返す。
+      mkcert 証明書は新規生成せず、旧 `/opt/server_base/nginx/ssl/` の鍵(root 所有・
+      600権限のためユーザーに sudo cp してもらった)をそのまま再利用し、
+      既存クライアントの信頼チェーンを維持した(新規生成すると別 CA になり、
+      家庭内の端末で証明書警告が出るところだった)。
+      **前提条件の Docker Compose / buildx バージョンについては上記
+      「実装中に確定した追加事項」を参照**(実サーバーの初期バージョンでは動かず、
+      ユーザー権限での plugin 差し替えが必要だった)。
 
 > **検証環境の制約:** この作業を行ったセッションには Docker デーモンはあるが、
 > コンテナイメージ registry への出口が塞がれておりイメージ pull ができない
@@ -139,10 +183,19 @@
       → `.devcontainer/docker-compose.yml` から `nginx-dev`/`webnet` を削除し、
       `workspace` コンテナから `./scripts/up.sh` を使う運用に変更
 - [x] systemd unit を新しい起動コマンド・ディレクトリ構成(`core/compose.yaml`)に合わせて更新する
-      → `core/systemd/core-stack.service` に統合（旧 nginx/dnsmasq 別々の unit は廃止）
+      → `core/systemd/core-stack.service` に統合（旧 nginx/dnsmasq 別々の unit は廃止）。
+      2026-07-31、実サーバーに実際にインストールして確認(それまではファイルを
+      作っただけで実機導入は未検証だった)。`After=`/`Requires=docker.service` が
+      `systemctl --user` では解決できずインストール時に起動失敗することが判明し修正
+      (詳細は上記「実装中に確定した追加事項」)。旧 `nginx-stack.service`・
+      `dnsmasq-ubuntu-local.service`・`nature-controler.service`(nature 単体の旧 unit)は
+      いずれも `systemctl --user disable` 済み。
 
 ## Phase 9: ドキュメント整備・最終確認
 
 - [x] ルート `README.md` を新しい「アプリ追加手順」(`scripts/new-app.*` の使い方含む)に書き換える
-- [ ] `docker compose down` → `up` でクリーンな状態からの再現性を確認する
-      → Phase 6/7 と同じ制約（registry 到達不可）のため実サーバーでの確認が必要
+- [x] `docker compose down` → `up` でクリーンな状態からの再現性を確認する
+      → 2026-07-31、実サーバーで実施。`scripts/down.sh` で全コンテナ・ネットワークが
+      きれいに消えることを確認した上で `scripts/up.sh` を再実行。イメージキャッシュが
+      効くため2秒弱で再起動し、`https://nature.ubuntu.local/` `https://time.ubuntu.local/`
+      とも即座に 200 が返ることを確認済み。
