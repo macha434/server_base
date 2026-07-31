@@ -1,11 +1,26 @@
-# LAN内でubuntu.localをHTTPSで公開する手順
+# core/nginx/ - LAN内でubuntu.localをHTTPSで公開する
 
 このガイドでは、ローカルネットワーク内で `ubuntu.local` としてサーバーをHTTPSで公開する方法を説明します。
+
+`*.ubuntu.local` のDNS解決(ワイルドカード対応)は [core/dnsmasq/README.md](../dnsmasq/README.md)
+が別途担当します。ホスト名変更やAvahi(mDNS)は不要です(mDNSはワイルドカードサブドメインを
+解決できないため、そもそもこの用途には使えません)。
+
+## 構成
+
+- `conf.d/00-http.conf` - resolver・WebSocket用map(httpコンテキスト)
+- `conf.d/snippets/` - `ssl.conf`・`security.conf`・`proxy.conf`(各vhostからinclude)
+- `conf.d/default.conf` - localhost・ubuntu.localのヘルスチェック用vhost
+- `conf.d/*.ubuntu.local.conf` - アプリごとのvhost。`scripts/gen-nginx-conf.py` が生成(gitignore対象)
+- `template/site.conf.template` - 上記vhost生成のテンプレート
+
+TLS証明書自体は `ssl/`(リポジトリ直下、`core/` の内部構造とは独立)に置く。
 
 ## 前提条件
 
 - Docker と Docker Compose がインストールされていること
-- Linux または macOS 環境
+- [core/dnsmasq/README.md](../dnsmasq/README.md) の手順で `*.ubuntu.local` が解決できること
+  (クライアント側のDNS設定も含む)
 
 ## セットアップ手順
 
@@ -28,44 +43,9 @@
 生成されるファイル：
 - `ssl/ubuntu.local-cert.pem` - SSL証明書
 - `ssl/ubuntu.local-key.pem` - 秘密鍵
-- `ssl/mkcert-ca/rootCA.pem` - ローカルCAのルート証明書（クライアント側の信頼設定に使う。下記5.参照）
+- `ssl/mkcert-ca/rootCA.pem` - ローカルCAのルート証明書（クライアント側の信頼設定に使う。下記3.参照）
 
-### 2. ホスト名の設定
-
-サーバーマシンのホスト名を `ubuntu.local` に設定します：
-
-```bash
-# 現在のホスト名を確認
-hostname
-
-# ホスト名を変更（一時的）
-sudo hostname ubuntu.local
-
-# 永続的に変更
-sudo hostnamectl set-hostname ubuntu.local
-
-# /etc/hostsに追加
-echo "127.0.0.1 ubuntu.local" | sudo tee -a /etc/hosts
-```
-
-### 3. Avahi（mDNS）のセットアップ
-
-LAN内の他のデバイスから `ubuntu.local` でアクセスできるようにします：
-
-```bash
-# Avahiをインストール
-sudo apt-get update
-sudo apt-get install -y avahi-daemon avahi-utils
-
-# Avahiを起動
-sudo systemctl start avahi-daemon
-sudo systemctl enable avahi-daemon
-
-# 動作確認
-avahi-browse -a -t
-```
-
-### 4. Nginxコンテナの起動
+### 2. Nginxコンテナの起動
 
 ```bash
 # リポジトリルートから起動スクリプトを実行
@@ -75,7 +55,7 @@ avahi-browse -a -t
 docker compose -f core/compose.yaml logs -f nginx
 ```
 
-### 5. 証明書の信頼設定（クライアント側）
+### 3. 証明書の信頼設定（クライアント側）
 
 各クライアントマシンでmkcertのCAを信頼する必要があります。
 
@@ -117,18 +97,10 @@ sudo update-ca-certificates
 sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain rootCA.pem
 ```
 
-### 6. クライアントマシンのhosts設定
+### 4. クライアント側のDNS設定
 
-LAN内の各クライアントマシンで `/etc/hosts` を編集します：
-
-```bash
-# サーバーのIPアドレスを確認（サーバー側で実行）
-ip addr show | grep "inet "
-
-# クライアントマシンで /etc/hosts に追加
-# 例: サーバーのIPが 192.168.1.100 の場合
-echo "192.168.1.100 ubuntu.local" | sudo tee -a /etc/hosts
-```
+`*.ubuntu.local` を名前解決できるようにする設定です。[core/dnsmasq/README.md](../dnsmasq/README.md)
+の「2. システムのDNS設定」を参照してください（`/etc/hosts` 編集は不要です）。
 
 ## 動作確認
 
@@ -140,6 +112,12 @@ curl -v https://ubuntu.local/health
 
 # 証明書の確認
 openssl s_client -connect ubuntu.local:443 -servername ubuntu.local
+```
+
+DNS設定がまだの場合は `--resolve` でDNSを経由せず直接確認できます：
+
+```bash
+curl -v --resolve ubuntu.local:443:127.0.0.1 https://ubuntu.local/health
 ```
 
 ### クライアント側
@@ -167,18 +145,16 @@ docker compose -f core/compose.yaml restart nginx
 
 ### ubuntu.localに接続できない
 
+DNS解決の問題は [core/dnsmasq/README.md](../dnsmasq/README.md) の
+トラブルシューティングを参照してください。ファイアウォールを使っている場合は
+以下のポートを開放してください：
+
 ```bash
-# Avahiが動作しているか確認
-sudo systemctl status avahi-daemon
-
-# mDNS名前解決を確認
-avahi-resolve -n ubuntu.local
-
-# ファイアウォール設定を確認
 sudo ufw status
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw allow 5353/udp  # mDNS用
+sudo ufw allow 53/tcp    # dnsmasq
+sudo ufw allow 53/udp    # dnsmasq
 ```
 
 ### Nginxが起動しない
@@ -204,4 +180,4 @@ ls -la ssl/
 
 - [mkcert GitHub](https://github.com/FiloSottile/mkcert)
 - [Nginx SSL Configuration](https://nginx.org/en/docs/http/configuring_https_servers.html)
-- [Avahi/mDNS Configuration](https://www.avahi.org/)
+- [core/dnsmasq/README.md](../dnsmasq/README.md) - `*.ubuntu.local` のDNS解決

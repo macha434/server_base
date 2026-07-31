@@ -21,7 +21,8 @@ server_base/
 │   │   │   ├── snippets/        # ssl.conf / security.conf / proxy.conf
 │   │   │   ├── default.conf     # localhost / ubuntu.local ヘルスチェック
 │   │   │   └── *.conf           # ← アプリごとの vhost。gen-nginx-conf.py が生成(gitignore対象)
-│   │   └── template/site.conf.template
+│   │   ├── template/site.conf.template
+│   │   └── README.md            # ubuntu.localをHTTPSで公開する手順
 │   ├── dnsmasq/                 # *.ubuntu.local のワイルドカード DNS
 │   └── systemd/                 # core スタック全体の systemd ユーザーサービス
 ├── stacks/                      # アプリごとの override (1 app = 1 ディレクトリ)
@@ -29,6 +30,7 @@ server_base/
 ├── ssl/                          # mkcert 証明書置き場(core/ の内部構造とは独立、データ専用)
 │   └── mkcert-ca/                # ローカルCA(rootCA.pem等)。永続化して使い回す
 └── scripts/
+    ├── README.md                 # 各スクリプトの一覧
     ├── new-app.sh                # stacks/<app名>/docker-compose.yml の雛形生成
     ├── gen-nginx-conf.py         # site.* ラベルから nginx vhost を生成
     ├── render-compose.sh         # core + stacks を include でまとめた compose.generated.yaml を生成
@@ -109,7 +111,7 @@ chmod +x install-service.sh
 ## DNS・TLS
 
 - `*.ubuntu.local` のワイルドカード DNS: [core/dnsmasq/README.md](core/dnsmasq/README.md)
-- mkcert によるローカル TLS 証明書: [ssl/README.md](ssl/README.md)
+- mkcert によるローカル TLS 証明書: [core/nginx/README.md](core/nginx/README.md)
 
 いずれもサブドメインを増やすたびの再設定は不要（ワイルドカード対応済み）。
 証明書のワイルドカードは 1 階層のみ有効なので、サブドメインは 1 階層で運用すること。

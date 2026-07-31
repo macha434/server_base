@@ -240,3 +240,9 @@
   (証明書生成ロジック)はこのセッションでも実機の Docker デーモンで確認したが、
   bind mount 経由での `ssl/` への書き込みは devcontainer の docker-outside-of-docker
   制約(Phase 6 の追記参照)により未確認。実サーバーでの最終確認が必要。
+- **セットアップ手順の README は `ssl/` から `core/nginx/README.md` へ移し、
+  スクリプト一覧は `scripts/README.md` に新設した。** `ssl/` はデータ専用ディレクトリ
+  (証明書本体のみ)という方針に合わせ、手順書は「証明書を実際に使う nginx」側
+  (`core/dnsmasq/README.md`・`core/systemd/README.md` と同じ並び)に置く形に統一。
+  あわせて `ssl/README.md` にあった「ホスト名の設定」「Avahi(mDNS)のセットアップ」は
+  `core/dnsmasq/README.md` のワイルドカードDNSと重複・不要だったため削除。
