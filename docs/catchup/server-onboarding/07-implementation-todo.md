@@ -228,3 +228,15 @@
   ため、コミットしても差分がノイズになるだけと判断し `.gitignore` に追加(実ファイルは
   そのまま残し `git rm --cached` で追跡のみ解除)。`00-http.conf`・`default.conf` など
   手書きファイルは引き続きコミット対象。
+- **`ssl/.gitignore` はルートの `.gitignore` に統合した。** このリポジトリは大半の除外
+  ルールをルート直下 1 枚に集約する流儀だったため、`ssl/.gitignore` だけがネストされた
+  例外になっていた。`ssl/*.pem` 等としてルートに統合し、`ssl/.gitignore` は削除。
+- **mkcert 証明書生成の事前準備を Docker のみにした。** 従来の `generate-cert.sh` は
+  ホストに直接 mkcert をインストールしていた(apt-get/wget/sudo)。
+  `scripts/mkcert.Dockerfile`(alpine + mkcert公式バイナリを wget で取得)でイメージを
+  ビルドし、コンテナ内で `mkcert -install`・証明書生成を行う方式に変更。CA
+  (`rootCA.pem`/`rootCA-key.pem`)は `ssl/mkcert-ca/` に bind mount して永続化し(
+  `.gitignore` 済み)、再実行しても同じ CA が再利用される。ビルド・mkcert 自体の動作
+  (証明書生成ロジック)はこのセッションでも実機の Docker デーモンで確認したが、
+  bind mount 経由での `ssl/` への書き込みは devcontainer の docker-outside-of-docker
+  制約(Phase 6 の追記参照)により未確認。実サーバーでの最終確認が必要。

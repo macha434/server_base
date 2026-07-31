@@ -20,17 +20,20 @@ server_base/
 │   │   │   ├── 00-http.conf     # resolver・WebSocket 用 map (http コンテキスト)
 │   │   │   ├── snippets/        # ssl.conf / security.conf / proxy.conf
 │   │   │   ├── default.conf     # localhost / ubuntu.local ヘルスチェック
-│   │   │   └── *.conf           # ← アプリごとの vhost。gen-nginx-conf.py が生成
-│   │   ├── template/site.conf.template
-│   │   └── ssl/                 # mkcert 証明書置き場・生成スクリプト
+│   │   │   └── *.conf           # ← アプリごとの vhost。gen-nginx-conf.py が生成(gitignore対象)
+│   │   └── template/site.conf.template
 │   ├── dnsmasq/                 # *.ubuntu.local のワイルドカード DNS
 │   └── systemd/                 # core スタック全体の systemd ユーザーサービス
 ├── stacks/                      # アプリごとの override (1 app = 1 ディレクトリ)
 │   └── <app名>/docker-compose.yml
+├── ssl/                          # mkcert 証明書置き場(core/ の内部構造とは独立、データ専用)
+│   └── mkcert-ca/                # ローカルCA(rootCA.pem等)。永続化して使い回す
 └── scripts/
     ├── new-app.sh                # stacks/<app名>/docker-compose.yml の雛形生成
     ├── gen-nginx-conf.py         # site.* ラベルから nginx vhost を生成
     ├── render-compose.sh         # core + stacks を include でまとめた compose.generated.yaml を生成
+    ├── generate-cert.sh          # mkcert同梱コンテナで ssl/ に証明書を生成(前提はDockerのみ)
+    ├── mkcert.Dockerfile
     ├── up.sh                     # conf生成 → up -d → nginx -t && reload
     └── down.sh
 ```

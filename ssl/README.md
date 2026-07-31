@@ -11,19 +11,24 @@
 
 ### 1. SSL証明書の生成
 
+事前準備はDockerのみです。mkcert自体をホストにインストールする必要はありません
+（`scripts/mkcert.Dockerfile` で同梱したイメージをコンテナ内で使う）。
+
 ```bash
 # リポジトリルートから実行する（出力先は常に ssl/ 配下に固定される）
 ./scripts/generate-cert.sh ubuntu.local
 ```
 
 このスクリプトは以下を実行します：
-- `mkcert` のインストール（未インストールの場合）
-- ローカルCA（認証局）のセットアップ
+- `scripts/mkcert.Dockerfile` から mkcert 同梱イメージをビルド（初回のみ。以降は Docker のレイヤーキャッシュが効く）
+- コンテナ内でローカルCA（認証局）をセットアップ（`ssl/mkcert-ca/` に永続化。既に存在すれば再利用するので、
+  再実行しても別のCAに変わってクライアントの信頼設定が壊れることはない）
 - `ubuntu.local` 用の証明書とキーを `ssl/` 配下に生成
 
 生成されるファイル：
 - `ssl/ubuntu.local-cert.pem` - SSL証明書
 - `ssl/ubuntu.local-key.pem` - 秘密鍵
+- `ssl/mkcert-ca/rootCA.pem` - ローカルCAのルート証明書（クライアント側の信頼設定に使う。下記5.参照）
 
 ### 2. ホスト名の設定
 
@@ -75,7 +80,10 @@ docker compose -f core/compose.yaml logs -f nginx
 各クライアントマシンでmkcertのCAを信頼する必要があります。
 
 #### サーバーマシン（証明書を生成したマシン）
-既に `mkcert -install` で設定済み
+
+`mkcert -install` はコンテナ内で実行されるため、**サーバー機自体のOS証明書ストアには
+入っていません**。サーバー機のブラウザで直接 `https://ubuntu.local/` を開く場合も、
+下記の他クライアントと同じ手順で `ssl/mkcert-ca/rootCA.pem` を信頼させる必要があります。
 
 #### 他のクライアントマシン
 
@@ -91,13 +99,10 @@ sudo mv mkcert-v1.4.4-linux-amd64 /usr/local/bin/mkcert
 # macOS
 brew install mkcert
 
-# サーバーマシンからCA証明書をコピー
-# サーバー側で実行
-mkcert -CAROOT
-# 表示されたディレクトリのrootCA.pemをクライアントにコピー
+# サーバー側の ssl/mkcert-ca/ をクライアントにコピー
 
 # クライアント側で実行
-export CAROOT=/path/to/copied/ca
+export CAROOT=/path/to/copied/ssl/mkcert-ca
 mkcert -install
 ```
 
