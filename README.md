@@ -37,6 +37,8 @@ server_base/
     ├── generate-cert.sh          # mkcert同梱コンテナで ssl/ に証明書を生成(前提はDockerのみ)
     ├── mkcert.Dockerfile
     ├── setup-dns.sh              # core/dnsmasq/ の *.ubuntu.local ワイルドカードDNSをセットアップ
+    ├── install-service.sh        # core/systemd/core-stack.service をsystemdユーザーサービスとして登録
+    ├── uninstall-service.sh
     ├── up.sh                     # conf生成 → up -d → nginx -t && reload
     └── down.sh
 ```
@@ -100,7 +102,7 @@ cd server_base
 - **ログイン時の自動起動**（任意）: systemd ユーザーサービスとして登録する
 
   ```bash
-  ./core/systemd/install-service.sh
+  ./scripts/install-service.sh
   ```
 
   詳細は [core/systemd/README.md](core/systemd/README.md) を参照。

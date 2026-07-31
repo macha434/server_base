@@ -4,11 +4,10 @@
 set -e
 
 SERVICE_NAME="core-stack.service"
-SERVICE_FILE="$(dirname "$0")/$SERVICE_NAME"
 SYSTEMD_DIR="$HOME/.config/systemd/user"
-# core/systemd/install-service.sh から見てリポジトリルートは2階層上。
 # clone先を決め打ちにせず、このスクリプトが実際に置かれている場所から都度算出する。
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SERVICE_FILE="$REPO_ROOT/core/systemd/$SERVICE_NAME"
 
 echo "=== server_base core-stack systemdユーザーサービスのインストール ==="
 

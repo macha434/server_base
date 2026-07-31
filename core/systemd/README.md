@@ -9,22 +9,23 @@
 ## インストール
 
 ```bash
-cd core/systemd
-chmod +x install-service.sh
-./install-service.sh
+# リポジトリルートから実行する
+chmod +x scripts/install-service.sh
+./scripts/install-service.sh
 ```
 
-`core-stack.service` の `WorkingDirectory`/`ExecStart`/`ExecStop` はリポジトリパスを
-決め打ちせず `@@REPO_ROOT@@` というプレースホルダにしてあり、`install-service.sh` が
+`core-stack.service`（本体は `core/systemd/core-stack.service`）の
+`WorkingDirectory`/`ExecStart`/`ExecStop` はリポジトリパスを決め打ちせず
+`@@REPO_ROOT@@` というプレースホルダにしてあり、`scripts/install-service.sh` が
 自身の実行位置からリポジトリの実パスを算出して置換したものを
 `~/.config/systemd/user/core-stack.service` に書き出す（symlink ではなく実体ファイル）。
-そのため **リポジトリを別の場所に移動した場合は `install-service.sh` を再実行**すること。
+そのため **リポジトリを別の場所に移動した場合は `scripts/install-service.sh` を再実行**すること。
 
 ## アンインストール
 
 ```bash
-cd core/systemd
-./uninstall-service.sh
+# リポジトリルートから実行する
+./scripts/uninstall-service.sh
 ```
 
 ## 起動対象アプリの指定

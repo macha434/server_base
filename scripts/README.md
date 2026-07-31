@@ -12,6 +12,9 @@ server_base の運用スクリプト一式。各スクリプトの詳しい使�
 | `new-app.sh` | 新しいアプリ用の `stacks/<app名>/docker-compose.yml` の雛形を生成 |
 | `generate-cert.sh` | mkcert同梱コンテナ(`mkcert.Dockerfile`)で `ssl/` にTLS証明書を生成。詳細は [core/nginx/README.md](../core/nginx/README.md) |
 | `mkcert.Dockerfile` | `generate-cert.sh` が使う、mkcert を同梱した使い捨てビルド用イメージ定義 |
+| `setup-dns.sh` | `core/dnsmasq/` の `*.ubuntu.local` ワイルドカードDNSをセットアップ。詳細は [core/dnsmasq/README.md](../core/dnsmasq/README.md) |
+| `install-service.sh` | `core/systemd/core-stack.service` を systemd ユーザーサービスとして登録。詳細は [core/systemd/README.md](../core/systemd/README.md) |
+| `uninstall-service.sh` | 上記の登録解除 |
 
 ## アプリを追加する流れ
 
