@@ -6,6 +6,9 @@ set -e
 SERVICE_NAME="core-stack.service"
 SERVICE_FILE="$(dirname "$0")/$SERVICE_NAME"
 SYSTEMD_DIR="$HOME/.config/systemd/user"
+# core/systemd/install-service.sh から見てリポジトリルートは2階層上。
+# clone先を決め打ちにせず、このスクリプトが実際に置かれている場所から都度算出する。
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 echo "=== server_base core-stack systemdユーザーサービスのインストール ==="
 
@@ -20,9 +23,11 @@ echo "✓ $SYSTEMD_DIR を作成しました"
 
 echo ""
 echo "2. サービスファイルをインストールしています..."
-SERVICE_FILE_ABS="$(cd "$(dirname "$SERVICE_FILE")" && pwd)/$(basename "$SERVICE_FILE")"
-ln -sf "$SERVICE_FILE_ABS" "$SYSTEMD_DIR/$SERVICE_NAME"
-echo "✓ $SYSTEMD_DIR/$SERVICE_NAME にシンボリックリンクを作成しました"
+# シンボリックリンクではなく、@@REPO_ROOT@@ をこのリポジトリの実パスに置換した
+# 実体ファイルとして書き出す(WorkingDirectory/ExecStart/ExecStop を固定パスに
+# 決め打ちしないため)。リポジトリを移動した場合は再度このスクリプトを実行すること。
+sed "s|@@REPO_ROOT@@|$REPO_ROOT|g" "$SERVICE_FILE" > "$SYSTEMD_DIR/$SERVICE_NAME"
+echo "✓ $SYSTEMD_DIR/$SERVICE_NAME に生成しました (REPO_ROOT=$REPO_ROOT)"
 
 echo ""
 echo "3. systemdをリロードしています..."

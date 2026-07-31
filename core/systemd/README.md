@@ -14,6 +14,12 @@ chmod +x install-service.sh
 ./install-service.sh
 ```
 
+`core-stack.service` の `WorkingDirectory`/`ExecStart`/`ExecStop` はリポジトリパスを
+決め打ちせず `@@REPO_ROOT@@` というプレースホルダにしてあり、`install-service.sh` が
+自身の実行位置からリポジトリの実パスを算出して置換したものを
+`~/.config/systemd/user/core-stack.service` に書き出す（symlink ではなく実体ファイル）。
+そのため **リポジトリを別の場所に移動した場合は `install-service.sh` を再実行**すること。
+
 ## アンインストール
 
 ```bash
