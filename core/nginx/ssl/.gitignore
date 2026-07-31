@@ -1,8 +1,0 @@
-# SSL証明書とキーファイル
-*.pem
-*.key
-*.crt
-*.csr
-
-# 生成スクリプトは除外しない
-!generate-cert.sh

@@ -13,7 +13,7 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/logs:/var/log/nginx
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ../ssl:/etc/nginx/ssl:ro
     restart: always
 
   dnsmasq:

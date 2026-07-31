@@ -106,7 +106,7 @@ chmod +x install-service.sh
 ## DNS・TLS
 
 - `*.ubuntu.local` のワイルドカード DNS: [core/dnsmasq/README.md](core/dnsmasq/README.md)
-- mkcert によるローカル TLS 証明書: [core/nginx/ssl/README.md](core/nginx/ssl/README.md)
+- mkcert によるローカル TLS 証明書: [ssl/README.md](ssl/README.md)
 
 いずれもサブドメインを増やすたびの再設定は不要（ワイルドカード対応済み）。
 証明書のワイルドカードは 1 階層のみ有効なので、サブドメインは 1 階層で運用すること。

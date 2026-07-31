@@ -12,22 +12,18 @@
 ### 1. SSL証明書の生成
 
 ```bash
-# 証明書生成スクリプトに実行権限を付与
-chmod +x core/nginx/ssl/generate-cert.sh
-
-# 証明書を生成（ubuntu.localドメイン用）
-cd core/nginx/ssl
-./generate-cert.sh ubuntu.local
+# リポジトリルートから実行する（出力先は常に ssl/ 配下に固定される）
+./scripts/generate-cert.sh ubuntu.local
 ```
 
 このスクリプトは以下を実行します：
 - `mkcert` のインストール（未インストールの場合）
 - ローカルCA（認証局）のセットアップ
-- `ubuntu.local` 用の証明書とキーを生成
+- `ubuntu.local` 用の証明書とキーを `ssl/` 配下に生成
 
 生成されるファイル：
-- `ubuntu.local-cert.pem` - SSL証明書
-- `ubuntu.local-key.pem` - 秘密鍵
+- `ssl/ubuntu.local-cert.pem` - SSL証明書
+- `ssl/ubuntu.local-key.pem` - 秘密鍵
 
 ### 2. ホスト名の設定
 
@@ -156,10 +152,9 @@ openssl s_client -connect ubuntu.local:443 -servername ubuntu.local
 # ブラウザのキャッシュをクリア
 # Chromeの場合: chrome://settings/clearBrowserData
 
-# 証明書を再生成
-cd core/nginx/ssl
-rm ubuntu.local-*.pem
-./generate-cert.sh ubuntu.local
+# 証明書を再生成（リポジトリルートから実行）
+rm ssl/ubuntu.local-*.pem
+./scripts/generate-cert.sh ubuntu.local
 
 # nginxを再起動
 docker compose -f core/compose.yaml restart nginx
@@ -191,7 +186,7 @@ docker compose -f core/compose.yaml logs nginx
 docker compose -f core/compose.yaml exec nginx nginx -t
 
 # 証明書ファイルのパーミッション確認
-ls -la core/nginx/ssl/
+ls -la ssl/
 ```
 
 ## セキュリティ注意事項

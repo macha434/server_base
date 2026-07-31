@@ -4,7 +4,8 @@
 set -e
 
 DOMAIN="${1:-ubuntu.local}"
-SSL_DIR="$(dirname "$0")"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SSL_DIR="$ROOT/ssl"
 
 echo "=== ローカル開発用SSL証明書を生成します ==="
 echo "ドメイン: $DOMAIN"

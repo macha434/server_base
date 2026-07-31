@@ -199,3 +199,25 @@
       きれいに消えることを確認した上で `scripts/up.sh` を再実行。イメージキャッシュが
       効くため2秒弱で再起動し、`https://nature.ubuntu.local/` `https://time.ubuntu.local/`
       とも即座に 200 が返ることを確認済み。
+
+## Phase 9 後の追加修正 (2026-07-31)
+
+実サーバーでの検証を経て判明した、リポジトリ内パスの決め打ちに起因する問題を修正した。
+
+- **`core/systemd/core-stack.service` のリポジトリパス決め打ち**: `WorkingDirectory`/
+  `ExecStart`/`ExecStop` が `%h/Projects/server_base` に決め打ちされており、clone 先が
+  変わると動かない。unit ファイル側は `@@REPO_ROOT@@` プレースホルダにし、
+  `install-service.sh` が自身の実行位置から実パスを算出して置換した実体ファイルを
+  `~/.config/systemd/user/` に書き出す方式に変更（symlink ではない。プレースホルダの
+  ままでは systemd がそのまま解釈してしまうため）。リポジトリを移動した場合は
+  `install-service.sh` の再実行が必要。
+- **mkcert 証明書の格納場所**: 旧 `/opt/server_base/nginx/ssl/` からの移行時に
+  `sudo cp`(root 所有・600権限のため)が必要だったのは、証明書が `core/nginx/ssl/` という
+  **`core/` の内部構造に紐づいた場所**に置かれていたため。証明書はサーバー機・ドメイン
+  (`*.ubuntu.local`)に紐づくものであり `core/` の内部構造とは無関係なので、
+  リポジトリ直下の `ssl/` ディレクトリに切り出した(`.gitkeep` でディレクトリ自体は保持し、
+  `*.pem` 等の証明書本体のみ `.gitignore`)。`core/compose.yaml` の bind mount 元も
+  `./nginx/ssl` → `../ssl` に変更。これで今後 `core/` 配下がどう再編されても
+  証明書を再配置する必要はない。あわせて `generate-cert.sh` は他の運用スクリプトと
+  同じ `scripts/` 配下に移し(出力先は常に `<repo root>/ssl/` を指すよう固定)、
+  `ssl/` はデータ専用ディレクトリにした。
