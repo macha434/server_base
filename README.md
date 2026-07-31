@@ -79,7 +79,9 @@ server_base/
 git clone <アプリのgit URL> ../my-app
 
 # 2. stacks/<app名>/docker-compose.yml を生成
-./scripts/new-app.sh my-app ../my-app deploy/docker-compose.yaml <サービス名> my-app 3000
+# (アプリ側composeのサービスが1個だけなら<サービス名>は省略可。自動検出する)
+./scripts/new-app.sh my-app ../my-app deploy/docker-compose.yaml my-app 3000
+# サービスが複数ある場合は明示する: ... deploy/docker-compose.yaml <サービス名> my-app 3000
 
 # 3. アプリ側 compose に override していないサービス（DB 等）があれば
 #    stacks/my-app/docker-compose.yml に追記して net-my-app に載せる

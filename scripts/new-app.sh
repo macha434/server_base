@@ -12,10 +12,14 @@
 #   - nginx を net-<app名> に参加させる
 #
 # 使い方:
-#   scripts/new-app.sh <app名> <リポジトリパス> <composeファイル> <サービス名> <サブドメイン> <ポート>
+#   scripts/new-app.sh <app名> <リポジトリパス> <composeファイル> [<サービス名>] <サブドメイン> <ポート>
 #
-# 例（time-announcement-frontend を server_base の兄弟ディレクトリにクローンした場合）:
-#   scripts/new-app.sh time-announcement ../time-announcement-frontend deploy/docker-compose.yaml schedule-ui time 3000
+#   <サービス名> は省略可。アプリ側composeのサービスが1個だけなら自動検出する。
+#   2個以上ある場合は省略できず、明示する必要がある。
+#
+# 例（time-announcement-frontend を server_base の兄弟ディレクトリにクローンした場合。
+#     サービスは schedule-ui の1個だけなので省略可）:
+#   scripts/new-app.sh time-announcement ../time-announcement-frontend deploy/docker-compose.yaml time 3000
 #
 #   <リポジトリパス>   … server_base ルートから見た相対パス（絶対パスも可）
 #   <composeファイル> … <リポジトリパス> から見た相対パス
@@ -23,25 +27,33 @@
 
 set -euo pipefail
 
-if [ $# -ne 6 ]; then
-    echo "使い方: $0 <app名> <リポジトリパス> <composeファイル> <サービス名> <サブドメイン> <ポート>" >&2
-    echo "例:     $0 time-announcement ../time-announcement-frontend deploy/docker-compose.yaml schedule-ui time 3000" >&2
+usage() {
+    echo "使い方: $0 <app名> <リポジトリパス> <composeファイル> [<サービス名>] <サブドメイン> <ポート>" >&2
+    echo "例:     $0 time-announcement ../time-announcement-frontend deploy/docker-compose.yaml time 3000" >&2
+    echo "        $0 time-announcement ../time-announcement-frontend deploy/docker-compose.yaml schedule-ui time 3000" >&2
+}
+
+SERVICE_NAME=""
+if [ $# -eq 5 ]; then
+    APP_NAME=$1
+    REPO_PATH=$2
+    COMPOSE_FILE=$3
+    HOST_SUBDOMAIN=$4
+    PORT=$5
+elif [ $# -eq 6 ]; then
+    APP_NAME=$1
+    REPO_PATH=$2
+    COMPOSE_FILE=$3
+    SERVICE_NAME=$4
+    HOST_SUBDOMAIN=$5
+    PORT=$6
+else
+    usage
     exit 1
 fi
-
-APP_NAME=$1
-REPO_PATH=$2
-COMPOSE_FILE=$3
-SERVICE_NAME=$4
-HOST_SUBDOMAIN=$5
-PORT=$6
 
 if ! [[ "$APP_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
     echo "エラー: <app名> は小文字英数字とハイフンのみ使用できます: $APP_NAME" >&2
-    exit 1
-fi
-if ! [[ "$SERVICE_NAME" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-    echo "エラー: <サービス名> に使える文字は英数字・._- のみです: $SERVICE_NAME" >&2
     exit 1
 fi
 if ! [[ "$HOST_SUBDOMAIN" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
@@ -50,6 +62,10 @@ if ! [[ "$HOST_SUBDOMAIN" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
 fi
 if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
     echo "エラー: <ポート> は数値である必要があります: $PORT" >&2
+    exit 1
+fi
+if [ -n "$SERVICE_NAME" ] && ! [[ "$SERVICE_NAME" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+    echo "エラー: <サービス名> に使える文字は英数字・._- のみです: $SERVICE_NAME" >&2
     exit 1
 fi
 
@@ -76,9 +92,26 @@ fi
 
 # <サービス名> がタイプミスだと、アプリ側compose内に存在しないサービスを指す
 # 空のservicesブロックが生成されてしまい、docker compose config で分かりにくい
-# エラーになる(image/buildが無い等)。ここで実際に存在するサービス名か検証する。
+# エラーになる(image/buildが無い等)。ここで実際に存在するサービス名か検証する
+# (省略時はここで自動検出も行う)。
 AVAILABLE_SERVICES="$(docker compose -f "$ABS_COMPOSE" --project-directory "$(dirname "$ABS_COMPOSE")" config --services 2>/dev/null || true)"
-if [ -z "$AVAILABLE_SERVICES" ]; then
+
+if [ -z "$SERVICE_NAME" ]; then
+    if [ -z "$AVAILABLE_SERVICES" ]; then
+        echo "エラー: ${COMPOSE_FILE} のサービス一覧取得に失敗したため自動検出できません。" >&2
+        echo "<サービス名> を明示して再実行してください。" >&2
+        exit 1
+    fi
+    SERVICE_COUNT="$(wc -l <<< "$AVAILABLE_SERVICES")"
+    if [ "$SERVICE_COUNT" -ne 1 ]; then
+        echo "エラー: ${COMPOSE_FILE} にサービスが複数あるため自動検出できません。" >&2
+        echo "存在するサービス: $(tr '\n' ' ' <<< "$AVAILABLE_SERVICES")" >&2
+        echo "<サービス名> を明示して再実行してください。" >&2
+        exit 1
+    fi
+    SERVICE_NAME="$AVAILABLE_SERVICES"
+    echo "サービス名を自動検出しました: $SERVICE_NAME"
+elif [ -z "$AVAILABLE_SERVICES" ]; then
     echo "警告: ${COMPOSE_FILE} のサービス一覧取得に失敗したため、<サービス名> の実在チェックをスキップします" >&2
 elif ! grep -qxF "$SERVICE_NAME" <<< "$AVAILABLE_SERVICES"; then
     echo "エラー: サービス '$SERVICE_NAME' は ${COMPOSE_FILE} に存在しません。" >&2
