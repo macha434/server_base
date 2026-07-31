@@ -44,16 +44,19 @@ server_base/
 ```
 
 アプリ側リポジトリは server_base の**兄弟ディレクトリ**にクローンする前提（`include` の
-相対パスが固定されるため）。`stacks/` に同梱されている `time-announcement` サンプル
-スタックは、対応するアプリ側リポジトリが兄弟ディレクトリに無いと `./scripts/up.sh` が
-そのまま失敗する。最小構成で試す場合はクローンするか、`stacks/` から一時的に退避すること:
+相対パスが固定されるため）:
 
 ```
 /opt/                                     ← 任意のベースディレクトリ
 ├── server_base/
-└── time-announcement-frontend/           # 改変しない (git clone したまま)
+└── my-app/                               # 改変しない (git clone したまま)
     └── deploy/docker-compose.yaml
 ```
+
+`stacks/*/docker-compose.yml` はサーバーインスタンスごとに異なる設定なので
+gitignore 対象（詳細は [stacks/README.md](stacks/README.md)）。clone した直後は
+`stacks/` は空で、`./scripts/up.sh` は core（nginx・dnsmasq）だけを起動する。
+アプリは「新しいアプリケーションの追加方法」の手順で追加していく。
 
 ## 設計の要点
 
@@ -78,9 +81,8 @@ server_base/
 前提: Docker・Docker Compose がインストールされていること。
 
 ```bash
-# 1. server_base とアプリ側リポジトリを兄弟ディレクトリにクローン（上記「構成」参照）
+# 1. server_base をクローン
 git clone <server_baseのURL> server_base
-git clone https://github.com/coresync-fukuhara/time-announcement-frontend time-announcement-frontend
 cd server_base
 
 # 2. *.ubuntu.local のワイルドカードDNSを起動（IPアドレスは省略するとLAN IPを自動検出する）
@@ -89,7 +91,7 @@ cd server_base
 # 3. TLS証明書を生成（前提はDockerのみ。mkcertのホストインストールは不要）
 ./scripts/generate-cert.sh ubuntu.local
 
-# 4. 起動（conf生成 → core(nginx・dnsmasq)を先に起動 → アプリを起動 → nginx -t && reload）
+# 4. core(nginx・dnsmasq)を起動（この時点でアプリはまだ無い。conf生成 → up -d → nginx -t && reload）
 ./scripts/up.sh
 ```
 
@@ -107,15 +109,15 @@ cd server_base
 
   詳細は [core/systemd/README.md](core/systemd/README.md) を参照。
 
-動作確認:
+動作確認（アプリはまだ無いので `core/nginx/conf.d/default.conf` のヘルスチェックのみ）:
 
 ```bash
 curl http://localhost/health
 curl -k https://ubuntu.local/health
 ```
 
-証明書エラーが出ずに `https://time.ubuntu.local/` にアクセスできれば完了。
-停止は `./scripts/down.sh`。
+証明書エラーが出ずにアクセスできれば完了。続けて「新しいアプリケーションの
+追加方法」でアプリを追加する。停止は `./scripts/down.sh`。
 
 ## 新しいアプリケーションの追加方法
 
@@ -131,11 +133,23 @@ git clone <アプリのgit URL> ../my-app
 # 3. アプリ側 compose に override していないサービス（DB 等）があれば
 #    stacks/my-app/docker-compose.yml に追記して net-my-app に載せる
 
-# 4. 起動（conf 生成 → up -d → nginx -t && reload まで一括）
+# 4. 起動（conf生成 → core → アプリ → nginx -t && reload まで一括）
 ./scripts/up.sh
 ```
 
 `https://my-app.ubuntu.local/` でアクセスできる。停止は `./scripts/down.sh`。
+
+### 具体例（time-announcement-frontend）
+
+サービスが1個だけのアプリなら `<サービス名>` を省略できる（自動検出する）:
+
+```bash
+git clone https://github.com/coresync-fukuhara/time-announcement-frontend ../time-announcement-frontend
+./scripts/new-app.sh time-announcement ../time-announcement-frontend deploy/docker-compose.yaml time 3000
+./scripts/up.sh
+```
+
+`https://time.ubuntu.local/` でアクセスできる。
 
 ## 日常操作
 

@@ -2,6 +2,13 @@
 
 アプリを 1 個追加する単位。`scripts/new-app.sh` が雛形を生成する。
 
+`stacks/<app名>/docker-compose.yml` は **gitignore 対象**（このディレクトリの
+`README.md` 自体は除く）。`.env`・`ssl/` と同様、「どのアプリを実際にデプロイ
+しているか」はサーバーインスタンスごとに異なる設定であり、server_base は
+汎用フレームワークとして再利用される前提のため、リポジトリにはコミットしない。
+新しく clone した server_base では `stacks/` は空の状態から始まり、
+`scripts/new-app.sh` で自分のアプリを追加していく。
+
 ```bash
 ./scripts/new-app.sh <app名> <リポジトリパス> <composeファイル> [<サービス名>] <サブドメイン> <ポート>
 ```

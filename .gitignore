@@ -14,6 +14,12 @@ ssl/mkcert-ca/
 # scripts/render-compose.sh が毎回再生成するファイル（stacks/ の一覧そのものなのでコミット不要）
 compose.generated.yaml
 
+# stacks/<app名>/docker-compose.yml は scripts/new-app.sh で都度手元生成する
+# インスタンス固有の設定(どのアプリをデプロイしているか)。server_base は
+# 汎用フレームワークとして再利用される前提のため、.env・ssl/ 同様コミットしない
+# (stacks/README.md 自体は説明用ファイルなので追跡する)。
+stacks/*/docker-compose.yml
+
 # docker compose が読む環境変数ファイル(COMPOSE_PROFILES等)。環境ごとに異なるためコミット不要
 .env
 
