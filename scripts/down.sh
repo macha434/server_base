@@ -11,4 +11,5 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 COMPOSE_FILE="$(./scripts/render-compose.sh)"
-docker compose -f "$COMPOSE_FILE" down "$@"
+# --profile はサブコマンドではなく docker compose 本体のフラグなので、down より前に渡す。
+docker compose -f "$COMPOSE_FILE" "$@" down

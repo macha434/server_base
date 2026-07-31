@@ -13,14 +13,14 @@ ubuntu.localドメインとそのサブドメイン（`*.ubuntu.local`）を自�
 ### 1. DNSサーバーを起動
 
 ```bash
-cd core/dnsmasq
-chmod +x setup-dns.sh
+# リポジトリルートから実行する
+chmod +x core/dnsmasq/setup-dns.sh
 
 # IPアドレスを指定して起動（必須）
-./setup-dns.sh 127.0.0.1
+./core/dnsmasq/setup-dns.sh 127.0.0.1
 
 # または別のIPアドレス
-./setup-dns.sh 192.168.1.100
+./core/dnsmasq/setup-dns.sh 192.168.1.100
 ```
 
 スクリプトは自動的に：

@@ -40,6 +40,14 @@ if ! [[ "$APP_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
     echo "エラー: <app名> は小文字英数字とハイフンのみ使用できます: $APP_NAME" >&2
     exit 1
 fi
+if ! [[ "$SERVICE_NAME" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+    echo "エラー: <サービス名> に使える文字は英数字・._- のみです: $SERVICE_NAME" >&2
+    exit 1
+fi
+if ! [[ "$HOST_SUBDOMAIN" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+    echo "エラー: <サブドメイン> は小文字英数字とハイフンのみ使用できます: $HOST_SUBDOMAIN" >&2
+    exit 1
+fi
 if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
     echo "エラー: <ポート> は数値である必要があります: $PORT" >&2
     exit 1
@@ -61,6 +69,23 @@ if [ ! -d "$ABS_REPO" ]; then
 fi
 
 ABS_COMPOSE="$ABS_REPO/$COMPOSE_FILE"
+if [ ! -f "$ABS_COMPOSE" ]; then
+    echo "エラー: composeファイルが見つかりません: $ABS_COMPOSE" >&2
+    exit 1
+fi
+
+# <サービス名> がタイプミスだと、アプリ側compose内に存在しないサービスを指す
+# 空のservicesブロックが生成されてしまい、docker compose config で分かりにくい
+# エラーになる(image/buildが無い等)。ここで実際に存在するサービス名か検証する。
+AVAILABLE_SERVICES="$(docker compose -f "$ABS_COMPOSE" --project-directory "$(dirname "$ABS_COMPOSE")" config --services 2>/dev/null || true)"
+if [ -z "$AVAILABLE_SERVICES" ]; then
+    echo "警告: ${COMPOSE_FILE} のサービス一覧取得に失敗したため、<サービス名> の実在チェックをスキップします" >&2
+elif ! grep -qxF "$SERVICE_NAME" <<< "$AVAILABLE_SERVICES"; then
+    echo "エラー: サービス '$SERVICE_NAME' は ${COMPOSE_FILE} に存在しません。" >&2
+    echo "存在するサービス: $(tr '\n' ' ' <<< "$AVAILABLE_SERVICES")" >&2
+    exit 1
+fi
+
 mkdir -p "$STACK_DIR"
 
 # include の path / project_directory は「stacks/<app名>/docker-compose.yml 自身の位置」

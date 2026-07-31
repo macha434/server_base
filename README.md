@@ -41,11 +41,15 @@ server_base/
 ```
 
 アプリ側リポジトリは server_base の**兄弟ディレクトリ**にクローンする前提（`include` の
-相対パスが固定されるため）:
+相対パスが固定されるため）。`stacks/` に同梱されている `nature`・`time-announcement` の
+2つのサンプルスタックは、どちらも対応するアプリ側リポジトリが兄弟ディレクトリに
+無いと `./scripts/up.sh` がそのまま失敗する。最小構成で試す場合は両方クローンするか、
+不要な方を `stacks/` から一時的に退避すること:
 
 ```
 /opt/                                     ← 任意のベースディレクトリ
 ├── server_base/
+├── nature-controler/                     # 改変しない (git clone したまま)
 └── time-announcement-frontend/           # 改変しない (git clone したまま)
     └── deploy/docker-compose.yaml
 ```
@@ -65,9 +69,8 @@ server_base/
 - アプリ側 compose 自身が独自の `networks:` を宣言している場合（例: `nature-controler`）、
   素直に override すると連結マージされて元のネットワークにも残ってしまうため、
   `networks: !override` で完全に置き換える（`scripts/new-app.sh` の雛形は常にこの形）
-- 生成物の扱い: `core/nginx/conf.d/*.conf`（vhost）は**コミットする**。
-  git diff でレビューできるようにするため
-  （`compose.generated.yaml` は `stacks/` の一覧そのものなので gitignore）
+- 生成物の扱い: `core/nginx/conf.d/*.ubuntu.local.conf`（vhost）・`compose.generated.yaml` は
+  どちらも `stacks/*/docker-compose.yml` から都度再生成できるため gitignore（コミット不要）
 
 ## 新しいアプリケーションの追加方法
 

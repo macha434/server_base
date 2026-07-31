@@ -14,6 +14,9 @@ ssl/mkcert-ca/
 # scripts/render-compose.sh が毎回再生成するファイル（stacks/ の一覧そのものなのでコミット不要）
 compose.generated.yaml
 
+# docker compose が読む環境変数ファイル(COMPOSE_PROFILES等)。環境ごとに異なるためコミット不要
+.env
+
 # scripts/gen-nginx-conf.py が生成する vhost (core/nginx/conf.d/<host>.conf) は
 # stacks/*/docker-compose.yml の labels から都度再生成できるためコミット不要。
 # site.host は必ず <app>.ubuntu.local の形になる運用のため、このパターンで

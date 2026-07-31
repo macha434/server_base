@@ -229,8 +229,11 @@
   そのまま残し `git rm --cached` で追跡のみ解除)。`00-http.conf`・`default.conf` など
   手書きファイルは引き続きコミット対象。
 - **`ssl/.gitignore` はルートの `.gitignore` に統合した。** このリポジトリは大半の除外
-  ルールをルート直下 1 枚に集約する流儀だったため、`ssl/.gitignore` だけがネストされた
+  ルールをルート直下 1 枚に集約する流儀だったため、`ssl/.gitignore` がネストされた
   例外になっていた。`ssl/*.pem` 等としてルートに統合し、`ssl/.gitignore` は削除。
+  (2026-07-31 コードレビューで判明: `core/dnsmasq/.gitignore` も同じ理由で
+  ネストされた例外として残っていた上、ルートの `.gitignore` と内容が完全に重複していた
+  ため、あわせて削除した。)
 - **mkcert 証明書生成の事前準備を Docker のみにした。** 従来の `generate-cert.sh` は
   ホストに直接 mkcert をインストールしていた(apt-get/wget/sudo)。
   `scripts/mkcert.Dockerfile`(alpine + mkcert公式バイナリを wget で取得)でイメージを
@@ -246,3 +249,51 @@
   (`core/dnsmasq/README.md`・`core/systemd/README.md` と同じ並び)に置く形に統一。
   あわせて `ssl/README.md` にあった「ホスト名の設定」「Avahi(mDNS)のセットアップ」は
   `core/dnsmasq/README.md` のワイルドカードDNSと重複・不要だったため削除。
+
+## マージ前コードレビューでの修正 (2026-07-31)
+
+PR全体を code-reviewer・silent-failure-hunter の2エージェントでレビューし、
+実機のDockerデーモンで再現・検証した上で以下を修正した。
+
+- **`--profile` フラグが効いていなかった。** `up.sh`/`down.sh` が `"$@"` を
+  `up -d`/`down` の**後ろ**に渡していたため、`--profile` のような docker compose
+  本体のフラグを付けると `unknown flag` で失敗していた(実測で確認)。
+  サブコマンドの**前**に渡すよう修正。
+- **`gen-nginx-conf.py` が失敗理由を握りつぶしていた。** `docker compose config`
+  失敗時、`subprocess.CalledProcessError` を捕捉しておらず、実際のエラー内容
+  (`stderr`)が一切表示されないまま素っ気ないトレースバックだけで終わっていた
+  (`new-app.sh` でサービス名をタイプミスした場合などで再現)。`stderr` を表示して
+  から終了するよう修正。
+- **オーファン検知が `default` ネットワークしか見ていなかった。** アプリ側 compose
+  が独自ネットワーク(例: `webnet`)を宣言していて `!override` し忘れたサービスは
+  `default` に落ちないため、既存の検査をすり抜けて何のエラーも出さずvhostが
+  生成されてしまうことを実機で再現。`net-<app名>` 規約に合っていないネットワークを
+  一律検知するよう修正。
+- **`site.host` の重複を検知していなかった。** 2つのサービスが同じ `site.host` を
+  宣言すると、後勝ちで片方のvhostが無言で消える動作を実機で再現。`site.port`
+  同様にエラーで停止するよう修正。
+- **`up.sh` の「他アプリが落ちていてもnginxは起動できる」という前提が、
+  compose全体のエラー(イメージpull失敗等)には効いていなかった。** 1つのアプリの
+  イメージがpullできないだけで `docker compose up -d` 自体が exit 1 になり、
+  core(nginx・dnsmasq)を含め**何も起動されない**ことを実機で再現(通常の
+  「起動はしたが後で落ちた」ケースとは異なり、これは資源が1つも作られない)。
+  core(nginx・dnsmasq)を先に単独で `up -d` してから、アプリ一式を `up -d` する
+  二段階に変更。アプリ側が失敗しても core は起動済みのまま残ることを実機で確認済み。
+- **`new-app.sh` の `<サービス名>` にタイプミスがあっても検知できなかった。**
+  `<app名>`/`<ポート>` は正規表現検証していたが `<サービス名>`/`<サブドメイン>` は
+  無検証だった。文字種チェックに加えて、アプリ側composeに実在するサービス名かどうか
+  (`docker compose config --services`)も事前検証するよう修正(実機で
+  タイプミスを検知できることを確認)。
+- **`core/systemd/{un,}install-service.sh` のエラー握りつぶし。**
+  `uninstall-service.sh` は `stderr` を `/dev/null` に捨てた上で、失敗理由を
+  問わず「既に停止/無効化されています」と決め打ちしていた。`install-service.sh` は
+  `set -e` のため `systemctl --user start` が失敗すると診断用の
+  status・journalctl案内が出せないまま終了していた。両方修正。
+- 上記に加え、以下も修正: README.mdに残っていた「vhostはコミットする」という
+  古い方針の記述(既にgitignore化されている実態と矛盾)、`core/compose.yaml`・
+  `up.sh` のコメントが実態(複数`-f`は使わない/常に全アプリ起動)と食い違っていた点、
+  `core/systemd/README.md` の `COMPOSE_PROFILES` 例が実際には無効(どのstacksも
+  `profiles:` を設定していない)なのにそう見えなかった点、`core/dnsmasq/.gitignore`
+  がルートの `.gitignore` と内容重複していた点、`.env` が `.gitignore` に無かった点、
+  READMEの兄弟ディレクトリ例に `nature-controler` が抜けていた点(`time-announcement-frontend`
+  のみ記載で、実際は両方無いと `./scripts/up.sh` が失敗する)。

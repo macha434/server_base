@@ -36,17 +36,25 @@ echo "✓ systemdをリロードしました"
 
 echo ""
 echo "4. サービスを有効化しています..."
-systemctl --user enable $SERVICE_NAME
+systemctl --user enable "$SERVICE_NAME"
 echo "✓ サービスを有効化しました（ログイン時に自動起動します）"
 
 echo ""
 echo "5. サービスを開始しています..."
-systemctl --user start $SERVICE_NAME
+# set -e 下で start が失敗するとここに到達できず、原因調査に必要な
+# status・journalctl の案内が出せないまま終了してしまう。
+# 失敗時もステータスを表示してから exit するようにする。
+if ! systemctl --user start "$SERVICE_NAME"; then
+    echo "✗ サービスの開始に失敗しました" >&2
+    systemctl --user status "$SERVICE_NAME" --no-pager || true
+    echo "詳細は次のコマンドで確認できます: journalctl --user -u $SERVICE_NAME -e" >&2
+    exit 1
+fi
 echo "✓ サービスを開始しました"
 
 echo ""
 echo "6. サービスステータス:"
-systemctl --user status $SERVICE_NAME --no-pager
+systemctl --user status "$SERVICE_NAME" --no-pager
 
 echo ""
 echo "=== インストール完了！ ==="

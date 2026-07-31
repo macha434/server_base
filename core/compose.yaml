@@ -1,8 +1,11 @@
 name: server-base
 
 # core/ は nginx・dnsmasq (ワイルドカード DNS) を含む基盤サービス一式。
-# アプリは stacks/<app名>/docker-compose.yml として別に追加し、
-# scripts/up.sh が core/compose.yaml と一緒に -f で展開する。
+# アプリは stacks/<app名>/docker-compose.yml として別に追加する。
+# scripts/render-compose.sh がこのファイルと stacks/*/docker-compose.yml を
+# 列挙した compose.generated.yaml を生成し、scripts/up.sh がそれを単一の -f で使う
+# (複数 -f 指定だと include: の相対パス解決が壊れるため。詳細は
+# docs/catchup/server-onboarding/07-implementation-todo.md 参照)。
 services:
   nginx:
     image: nginx:latest
