@@ -1,5 +1,5 @@
 lockfile_version: '1'
-generated_at: '2026-07-30T11:54:22.146211+00:00'
+generated_at: '2026-07-31T11:31:51.449564+00:00'
 apm_version: 0.26.0
 dependencies:
 - repo_url: anthropics/claude-plugins-official
@@ -120,12 +120,10 @@ dependencies:
   deployed_files:
   - .claude/agents/code-architect.md
   - .claude/agents/code-explorer.md
-  - .claude/agents/code-reviewer.md
   - .claude/commands/feature-dev.md
   deployed_file_hashes:
     .claude/agents/code-architect.md: sha256:c50fb08d59a4bbd19660860626a049e44cf1a2b0c1cf782e6c7a99ba7e71b0c3
     .claude/agents/code-explorer.md: sha256:3b277703de7458988ec3b8021c716f79f642e174950ed332629310f68322029a
-    .claude/agents/code-reviewer.md: sha256:a7df173bf77a00da5584c6401a1061524fdbe477b6fef5dd496d4c7a9113c78c
     .claude/commands/feature-dev.md: sha256:656a01ce40782ee849c444916362df0e4e4173afcd33313777fa86021d89994b
   content_hash: sha256:6423f8e2cdf256a380c05ad7a2e082c12fd06a4ed7a63868d19c9fa10bd3a4c2
 - repo_url: anthropics/claude-plugins-official
@@ -171,6 +169,7 @@ dependencies:
   is_virtual: true
   package_type: marketplace_plugin
   deployed_files:
+  - .claude/agents/code-reviewer.md
   - .claude/agents/code-simplifier.md
   - .claude/agents/comment-analyzer.md
   - .claude/agents/pr-test-analyzer.md
@@ -178,6 +177,7 @@ dependencies:
   - .claude/agents/type-design-analyzer.md
   - .claude/commands/review-pr.md
   deployed_file_hashes:
+    .claude/agents/code-reviewer.md: sha256:019395c3ce457460115cc703e2f4a86fed4bbe560dc58355051c4d877155d366
     .claude/agents/code-simplifier.md: sha256:976ddb22b84bc5a714216531a75db5e73169554add6b953442beeedb49b56891
     .claude/agents/comment-analyzer.md: sha256:4a9c1f2eb8234a4b9231983e75739663d512e1aed242388964a165a719b84698
     .claude/agents/pr-test-analyzer.md: sha256:fcb1cde9ba7b21694b508766a8d6a79bc91bed9982f828f816210059934f46b4
@@ -380,9 +380,9 @@ deployments:
   runtime: null
   scope: project
   owners:
-  - anthropics/claude-plugins-official/plugins/feature-dev
-  active_owner: anthropics/claude-plugins-official/plugins/feature-dev
-  content_hash: sha256:a7df173bf77a00da5584c6401a1061524fdbe477b6fef5dd496d4c7a9113c78c
+  - anthropics/claude-plugins-official/plugins/pr-review-toolkit
+  active_owner: anthropics/claude-plugins-official/plugins/pr-review-toolkit
+  content_hash: sha256:019395c3ce457460115cc703e2f4a86fed4bbe560dc58355051c4d877155d366
 - kind: project-relative
   target: claude
   value: .claude/agents/code-simplifier.md
