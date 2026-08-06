@@ -37,7 +37,12 @@ def _remove(args: argparse.Namespace) -> int:
         print("エラー: render-compose.sh の実行に失敗しました。", file=sys.stderr)
         return code
 
-    services = stacks.app_services(app_name)
+    try:
+        services = stacks.app_services(app_name)
+    except RuntimeError as exc:
+        print(f"エラー: {exc}", file=sys.stderr)
+        return 1
+
     if services:
         code = shell.run(
             ["docker", "compose", "-f", str(paths.COMPOSE_GENERATED), "rm", "-f", "-s", "-v", *services]
