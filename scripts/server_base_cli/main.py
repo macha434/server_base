@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import argparse
 
-from .commands import service
+from .commands import init, service
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -13,6 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    init.register(subparsers)
     service.register(subparsers)
 
     return parser
