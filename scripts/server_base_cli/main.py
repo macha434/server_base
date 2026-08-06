@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import argparse
 
-from .commands import app, cert, doctor, init, logs, restart, service
+from .commands import app, cert, doctor, init, logs, restart, service, status
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     logs.register(subparsers)
     restart.register(subparsers)
     service.register(subparsers)
+    status.register(subparsers)
 
     return parser
 
