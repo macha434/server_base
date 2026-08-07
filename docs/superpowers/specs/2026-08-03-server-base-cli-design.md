@@ -94,8 +94,17 @@ CLIには含めない機能（YAGNI・今回のスコープ外）:
    "以下を削除します: stacks/<app名>/ ・コンテナ ・net-<app名> ネットワーク"
 3. render-compose.sh を実行し、削除前の状態の compose.generated.yaml を得る
 4. 対象サービス名を特定する:
-   docker compose -f stacks/<app名>/docker-compose.yml config --services
-   （new-app.sh が使っているのと同じ手法）
+   docker compose -f compose.generated.yaml config --format json
+   を読み、net-<app名> に載っているサービスのうち core サービス
+   （nginx / dnsmasq）を除いたものを対象とする。
+   ※ stacks/<app名>/docker-compose.yml を単体で config にかけてはいけない。
+     このファイルが持つ nginx の networks 追記には image が無く
+     （image は core/compose.yaml にしかない）、
+     "service nginx has neither an image nor a build context specified"
+     で必ず失敗する。core と合成済みの compose.generated.yaml 経由なら通る
+     （scripts/gen-nginx-conf.py も同じ方法で読んでいる）。
+     nginx は全アプリの net-<app名> に参加するため、除外は必須
+     （怠ると app remove が nginx を巻き込んで削除してしまう）。
 5. docker compose -f compose.generated.yaml rm -f -s -v <対象サービス名...>
    （-s で先に停止、-v でアプリ専用の匿名ボリュームも削除）
 6. docker network rm net-<app名>（存在しなければ黙って無視する）

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 
 from .. import paths, shell, stacks
 
@@ -15,6 +14,9 @@ def _container_state(service: str) -> str:
             ["docker", "compose", "-f", str(paths.COMPOSE_GENERATED), "ps", "--format", "{{.State}}", service]
         )
     except Exception:
+        return "確認不可"
+    if result.returncode != 0:
+        # dockerデーモンに到達できない等。コンテナが停止しているのとは区別する。
         return "確認不可"
     state = result.stdout.strip()
     return state if state else "stopped"
@@ -36,34 +38,6 @@ def _systemd_enabled() -> bool:
     return result.returncode == 0
 
 
-def _site_host(app_name: str) -> str | None:
-    """アプリのdocker-compose.ymlから site.host ラベルの値を読み取る。
-
-    site.hostラベルが見つからない場合や、docker-composeコマンドが失敗した場合はNoneを返す。
-    """
-    try:
-        result = shell.capture(
-            ["docker", "compose", "-f", str(paths.stack_compose_path(app_name)), "config", "--format", "json"]
-        )
-    except Exception:
-        return None
-
-    if result.returncode != 0:
-        return None
-
-    try:
-        cfg = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        return None
-
-    for svc in cfg.get("services", {}).values():
-        labels = svc.get("labels") or {}
-        if "site.host" in labels:
-            return labels["site.host"]
-
-    return None
-
-
 def _status(args: argparse.Namespace) -> int:
     print("== core ==")
     for service in _CORE_SERVICES:
@@ -77,13 +51,13 @@ def _status(args: argparse.Namespace) -> int:
     for app_name in apps:
         try:
             services = stacks.app_services(app_name)
+            host = stacks.app_site_host(app_name)
         except Exception:
             print(f"  {app_name}: (サービス情報が確認できません)")
             continue
 
         states = ", ".join(f"{s}={_container_state(s)}" for s in services)
 
-        host = _site_host(app_name)
         if host is None:
             print(f"  {app_name}: {states} | (site.hostラベルが見つかりません)")
             continue

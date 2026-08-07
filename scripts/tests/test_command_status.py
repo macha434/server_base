@@ -7,7 +7,7 @@ from server_base_cli.main import build_parser
 
 def test_container_state_returns_state_string():
     with patch("server_base_cli.commands.status.shell.capture") as mock_capture:
-        mock_capture.return_value = MagicMock(stdout="running\n")
+        mock_capture.return_value = MagicMock(returncode=0, stdout="running\n")
         assert status._container_state("nginx") == "running"
 
     mock_capture.assert_called_once_with(
@@ -17,7 +17,7 @@ def test_container_state_returns_state_string():
 
 def test_container_state_returns_stopped_when_output_empty():
     with patch("server_base_cli.commands.status.shell.capture") as mock_capture:
-        mock_capture.return_value = MagicMock(stdout="")
+        mock_capture.return_value = MagicMock(returncode=0, stdout="")
         assert status._container_state("nginx") == "stopped"
 
     mock_capture.assert_called_once_with(
@@ -30,6 +30,13 @@ def test_container_state_returns_unable_when_docker_missing():
         "server_base_cli.commands.status.shell.capture",
         side_effect=FileNotFoundError("No such file or directory: 'docker'"),
     ):
+        assert status._container_state("nginx") == "確認不可"
+
+
+def test_container_state_returns_unable_when_docker_command_fails():
+    """dockerデーモンに到達できない場合、stoppedではなく確認不可を返す(I3)。"""
+    with patch("server_base_cli.commands.status.shell.capture") as mock_capture:
+        mock_capture.return_value = MagicMock(returncode=1, stdout="", stderr="Cannot connect to the Docker daemon")
         assert status._container_state("nginx") == "確認不可"
 
 
@@ -73,55 +80,13 @@ def test_systemd_enabled_false_when_systemctl_missing():
         assert status._systemd_enabled() is False
 
 
-def test_site_host_returns_label_value_when_found():
-    with patch("server_base_cli.commands.status.shell.capture") as mock_capture:
-        mock_capture.return_value = MagicMock(
-            returncode=0,
-            stdout='{"services": {"web": {"labels": {"site.host": "example.ubuntu.local"}}}}'
-        )
-        assert status._site_host("myapp") == "example.ubuntu.local"
-
-    mock_capture.assert_called_once_with(
-        ["docker", "compose", "-f", str(paths.stack_compose_path("myapp")), "config", "--format", "json"]
-    )
-
-
-def test_site_host_returns_none_when_label_not_found():
-    with patch("server_base_cli.commands.status.shell.capture") as mock_capture:
-        mock_capture.return_value = MagicMock(
-            returncode=0,
-            stdout='{"services": {"web": {"labels": {}}}}'
-        )
-        assert status._site_host("myapp") is None
-
-
-def test_site_host_returns_none_when_docker_compose_fails():
-    with patch("server_base_cli.commands.status.shell.capture") as mock_capture:
-        mock_capture.return_value = MagicMock(returncode=1)
-        assert status._site_host("myapp") is None
-
-
-def test_site_host_returns_none_when_docker_missing():
-    with patch(
-        "server_base_cli.commands.status.shell.capture",
-        side_effect=FileNotFoundError("No such file or directory: 'docker'"),
-    ):
-        assert status._site_host("myapp") is None
-
-
-def test_site_host_returns_none_when_json_invalid():
-    with patch("server_base_cli.commands.status.shell.capture") as mock_capture:
-        mock_capture.return_value = MagicMock(returncode=0, stdout="invalid json")
-        assert status._site_host("myapp") is None
-
-
 def test_status_command_prints_core_and_each_app(capsys):
     with patch("server_base_cli.commands.status.stacks.list_apps", return_value=["myapp"]), \
          patch("server_base_cli.commands.status.stacks.app_services", return_value=["myapp"]), \
          patch("server_base_cli.commands.status._container_state", return_value="running"), \
          patch("server_base_cli.commands.status._url_reachable", return_value=True), \
          patch("server_base_cli.commands.status._systemd_enabled", return_value=True), \
-         patch("server_base_cli.commands.status._site_host", return_value="example.ubuntu.local"):
+         patch("server_base_cli.commands.status.stacks.app_site_host", return_value="example.ubuntu.local"):
         parser = build_parser()
         args = parser.parse_args(["status"])
         code = args.func(args)
@@ -140,7 +105,7 @@ def test_status_handles_missing_site_host_label(capsys):
          patch("server_base_cli.commands.status.stacks.app_services", return_value=["svc"]), \
          patch("server_base_cli.commands.status._container_state", return_value="running"), \
          patch("server_base_cli.commands.status._systemd_enabled", return_value=True), \
-         patch("server_base_cli.commands.status._site_host", return_value=None):
+         patch("server_base_cli.commands.status.stacks.app_site_host", return_value=None):
         parser = build_parser()
         args = parser.parse_args(["status"])
         code = args.func(args)
@@ -166,3 +131,29 @@ def test_status_handles_broken_app_services(capsys):
     assert code == 0
     assert "brokenapp" in out
     assert "サービス情報が確認できません" in out
+
+
+def test_status_handles_broken_app_site_host(capsys):
+    """app_site_host が RuntimeError を投げても行が半端に出力されず、次のアプリへ進む。"""
+    with patch("server_base_cli.commands.status.stacks.list_apps", return_value=["brokenapp"]), \
+         patch("server_base_cli.commands.status.stacks.app_services", return_value=["svc"]), \
+         patch(
+             "server_base_cli.commands.status.stacks.app_site_host",
+             side_effect=RuntimeError("docker compose config failed"),
+         ), \
+         patch("server_base_cli.commands.status._container_state", return_value="running"), \
+         patch("server_base_cli.commands.status._systemd_enabled", return_value=True):
+        parser = build_parser()
+        args = parser.parse_args(["status"])
+        code = args.func(args)
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "brokenapp: (サービス情報が確認できません)" in out
+    # 半端な行(サービス状態だけ出てURLが出ない行)が出ていないこと
+    assert "svc=running" not in out
+
+
+def test_status_no_longer_defines_local_site_host():
+    """_site_host は stacks.app_site_host に移管され、status.py からは削除された。"""
+    assert not hasattr(status, "_site_host")
