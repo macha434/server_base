@@ -50,6 +50,12 @@ def _remove(args: argparse.Namespace) -> int:
         if code != 0:
             print(f"エラー: コンテナの削除に失敗しました(exit code {code})。", file=sys.stderr)
             return code
+    else:
+        print(
+            f"注意: net-{app_name} に載っているサービスが見つかりませんでした"
+            "(profilesで無効化されている可能性があります)。コンテナ削除はスキップします。",
+            file=sys.stderr,
+        )
 
     shell.run(["docker", "network", "rm", f"net-{app_name}"])
 

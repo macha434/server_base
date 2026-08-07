@@ -17,6 +17,13 @@ def _restart(args: argparse.Namespace) -> int:
         except RuntimeError as exc:
             print(f"エラー: {exc}", file=sys.stderr)
             return 1
+        if not services:
+            print(
+                f"エラー: net-{args.app_name} に載っているサービスが見つかりません"
+                "(profilesで無効化されている可能性があります)。",
+                file=sys.stderr,
+            )
+            return 1
         return shell.run(["docker", "compose", "-f", str(paths.COMPOSE_GENERATED), "restart", *services])
 
     code = shell.run_script("down.sh")

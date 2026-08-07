@@ -19,6 +19,13 @@ def _logs(args: argparse.Namespace) -> int:
         except RuntimeError as exc:
             print(f"エラー: {exc}", file=sys.stderr)
             return 1
+        if not services:
+            print(
+                f"エラー: net-{args.app_name} に載っているサービスが見つかりません"
+                "(profilesで無効化されている可能性があります)。",
+                file=sys.stderr,
+            )
+            return 1
     else:
         services = _CORE_SERVICES
 
