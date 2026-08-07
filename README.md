@@ -32,6 +32,10 @@ server_base/
 └── scripts/
     ├── README.md                 # 各スクリプトの一覧
     ├── new-app.sh                # stacks/<app名>/docker-compose.yml の雛形生成
+    ├── server-base                # 統合CLI本体(init/service/app/status/logs/restart/doctor/cert)
+    ├── server_base_cli/           # ↑の実装パッケージ
+    ├── install-cli.sh             # server-baseを~/.local/binにインストール
+    ├── uninstall-cli.sh           # 上記の解除
     ├── gen-nginx-conf.py         # site.* ラベルから nginx vhost を生成
     ├── render-compose.sh         # core + stacks を include でまとめた compose.generated.yaml を生成
     ├── generate-cert.sh          # mkcert同梱コンテナで ssl/ に証明書を生成(前提はDockerのみ)
@@ -150,6 +154,27 @@ git clone https://github.com/coresync-fukuhara/time-announcement-frontend ../tim
 ```
 
 `https://time.ubuntu.local/` でアクセスできる。
+
+## CLI (server-base)
+
+`scripts/*.sh` を個別に呼ぶ代わりに、統合CLI `server-base` でも同じ操作ができる。
+`./scripts/install-cli.sh` を一度実行すると `~/.local/bin/server-base` に
+シンボリックリンクが張られ、リポジトリの外からでも `server-base` として呼べる。
+
+```bash
+server-base init                 # DNS+証明書発行+core起動(初回セットアップ一括)
+server-base service add          # systemdユーザーサービスの登録
+server-base service remove       # 上記の解除
+server-base app add <app名> <repo> <compose> [--service NAME] <subdomain> <port>
+server-base app remove <app名>   # 確認プロンプトあり(-yで省略可)
+server-base status                # core+各アプリの稼働状況・URL・到達性を一覧表示
+server-base logs [app名]          # 省略時はcore(nginx/dnsmasq)
+server-base restart [app名]       # 省略時は全体
+server-base doctor                # 起動前の環境チェック一式
+server-base cert renew [domain]   # TLS証明書の再発行(省略時ubuntu.local)
+```
+
+各サブコマンドの詳細は `server-base <サブコマンド> --help` を参照。
 
 ## 日常操作
 
