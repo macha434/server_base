@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 
 from .. import paths, shell, stacks
 
@@ -9,21 +10,58 @@ _CORE_SERVICES = ["nginx", "dnsmasq"]
 
 
 def _container_state(service: str) -> str:
-    result = shell.capture(
-        ["docker", "compose", "-f", str(paths.COMPOSE_GENERATED), "ps", "--format", "{{.State}}", service]
-    )
+    try:
+        result = shell.capture(
+            ["docker", "compose", "-f", str(paths.COMPOSE_GENERATED), "ps", "--format", "{{.State}}", service]
+        )
+    except Exception:
+        return "確認不可"
     state = result.stdout.strip()
     return state if state else "stopped"
 
 
 def _url_reachable(url: str) -> bool:
-    result = shell.capture(["curl", "-k", "-s", "-o", "/dev/null", "-w", "%{http_code}", url])
+    try:
+        result = shell.capture(["curl", "-k", "-s", "-o", "/dev/null", "-w", "%{http_code}", url])
+    except Exception:
+        return False
     return result.returncode == 0 and result.stdout.strip().startswith(("2", "3"))
 
 
 def _systemd_enabled() -> bool:
-    result = shell.capture(["systemctl", "--user", "is-enabled", "core-stack.service"])
+    try:
+        result = shell.capture(["systemctl", "--user", "is-enabled", "core-stack.service"])
+    except Exception:
+        return False
     return result.returncode == 0
+
+
+def _site_host(app_name: str) -> str | None:
+    """アプリのdocker-compose.ymlから site.host ラベルの値を読み取る。
+
+    site.hostラベルが見つからない場合や、docker-composeコマンドが失敗した場合はNoneを返す。
+    """
+    try:
+        result = shell.capture(
+            ["docker", "compose", "-f", str(paths.stack_compose_path(app_name)), "config", "--format", "json"]
+        )
+    except Exception:
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    try:
+        cfg = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+    for svc in cfg.get("services", {}).values():
+        labels = svc.get("labels") or {}
+        if "site.host" in labels:
+            return labels["site.host"]
+
+    return None
 
 
 def _status(args: argparse.Namespace) -> int:
@@ -37,9 +75,20 @@ def _status(args: argparse.Namespace) -> int:
     if not apps:
         print("  (登録済みアプリはありません)")
     for app_name in apps:
-        services = stacks.app_services(app_name)
+        try:
+            services = stacks.app_services(app_name)
+        except Exception:
+            print(f"  {app_name}: (サービス情報が確認できません)")
+            continue
+
         states = ", ".join(f"{s}={_container_state(s)}" for s in services)
-        url = f"https://{app_name}.ubuntu.local/"
+
+        host = _site_host(app_name)
+        if host is None:
+            print(f"  {app_name}: {states} | (site.hostラベルが見つかりません)")
+            continue
+
+        url = f"https://{host}/"
         reachable = "到達可" if _url_reachable(url) else "到達不可"
         print(f"  {app_name}: {states} | {url} ({reachable})")
 
