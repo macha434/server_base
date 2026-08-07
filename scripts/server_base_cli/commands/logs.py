@@ -14,7 +14,11 @@ def _logs(args: argparse.Namespace) -> int:
         if not stacks.app_exists(args.app_name):
             print(f"エラー: stacks/{args.app_name}/docker-compose.yml が見つかりません。", file=sys.stderr)
             return 1
-        services = stacks.app_services(args.app_name)
+        try:
+            services = stacks.app_services(args.app_name)
+        except RuntimeError as exc:
+            print(f"エラー: {exc}", file=sys.stderr)
+            return 1
     else:
         services = _CORE_SERVICES
 

@@ -166,3 +166,52 @@ def test_app_remove_returns_1_when_app_services_raises_runtime_error(tmp_path, m
     mock_rmtree.assert_not_called()
     assert app_dir.exists()  # app_services失敗時はまだ削除しない
     mock_run_script.assert_called_once_with("render-compose.sh")
+
+
+def test_app_remove_reports_error_when_rmtree_fails(tmp_path, monkeypatch, capsys):
+    """rmtree失敗時: コンテナ/ネットワーク削除は済んでおり、up.sh は実行せず非0を返す(I5)。"""
+    monkeypatch.setattr(paths, "STACKS_DIR", tmp_path)
+    app_dir = tmp_path / "myapp"
+    app_dir.mkdir()
+    (app_dir / "docker-compose.yml").write_text("services:\n  web: {}\n")
+
+    calls = []
+
+    def fake_run_script(name, args=()):
+        calls.append(("run_script", name))
+        return 0
+
+    def fake_run(cmd):
+        calls.append(("run", tuple(cmd)))
+        return 0
+
+    with patch("server_base_cli.commands.app.shell.run_script", side_effect=fake_run_script), \
+         patch("server_base_cli.commands.app.shell.run", side_effect=fake_run), \
+         patch("server_base_cli.commands.app.stacks.app_services", return_value=["web"]), \
+         patch(
+             "server_base_cli.commands.app.shutil.rmtree",
+             side_effect=PermissionError(13, "Permission denied"),
+         ) as mock_rmtree:
+        parser = build_parser()
+        args = parser.parse_args(["app", "remove", "myapp", "-y"])
+        code = args.func(args)
+
+    assert code != 0
+    mock_rmtree.assert_called_once_with(paths.stack_dir("myapp"))
+    # コンテナ削除とネットワーク削除は rmtree より前に既に実行済み
+    assert calls == [
+        ("run_script", "render-compose.sh"),
+        (
+            "run",
+            ("docker", "compose", "-f", str(paths.COMPOSE_GENERATED), "rm", "-f", "-s", "-v", "web"),
+        ),
+        ("run", ("docker", "network", "rm", "net-myapp")),
+    ]
+    # 削除が中途半端なので up.sh は呼ばない
+    assert ("run_script", "up.sh") not in calls
+
+    err = capsys.readouterr().err
+    assert "Permission denied" in err
+    assert "stacks/myapp/" in err
+    assert "up.sh" in err
+

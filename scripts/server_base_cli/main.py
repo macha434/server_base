@@ -28,4 +28,9 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except KeyboardInterrupt:
+        # `server-base logs -f` などの長時間実行コマンドをCtrl-Cで止めたときに
+        # 生のトレースバックを出さない。130はSIGINTの慣例的なexit code。
+        return 130

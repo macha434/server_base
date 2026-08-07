@@ -53,7 +53,17 @@ def _remove(args: argparse.Namespace) -> int:
 
     shell.run(["docker", "network", "rm", f"net-{app_name}"])
 
-    shutil.rmtree(paths.stack_dir(app_name))
+    try:
+        shutil.rmtree(paths.stack_dir(app_name))
+    except OSError as exc:
+        print(
+            f"エラー: stacks/{app_name}/ の削除に失敗しました: {exc}\n"
+            f"コンテナと net-{app_name} ネットワークは既に削除済みです。"
+            f"削除が中途半端な状態のため up.sh は実行していません。\n"
+            f"stacks/{app_name}/ を手動で削除してから ./scripts/up.sh を実行してください。",
+            file=sys.stderr,
+        )
+        return 1
 
     return shell.run_script("up.sh")
 
