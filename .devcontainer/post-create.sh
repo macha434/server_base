@@ -81,13 +81,19 @@ JSON
 
     # VS Code は .code-workspace と同じ場所に .devcontainer があれば最優先で使うため
     # 複製する(シンボリックリンクだと docker-compose.yml の volumes(../..) の相対パス
-    # 解決が1階層ずれるため不採用)。post-create.sh 自体はworkspaceFolder基準で実体が
-    # 呼ばれるためコピー不要。core側のdevcontainer.jsonを変更したら反映すること。
+    # 解決が1階層ずれるため不採用)。
+    #
+    # core側のdevcontainer.json/docker-compose.ymlをsedで一部だけ書き換えて使い回すと
+    # workspaceFolder のようなcore固有の値を直し忘れたまま複製されるバグを踏むため、
+    # ../ (workspace root) 用の定義は workspace-root/ に別途正としてそのまま保持し、
+    # ここでは無加工でコピーするだけにする。root側の定義を変えたい場合は
+    # workspace-root/ 以下を直接編集すること。
     if [ ! -d "$workspace_devcontainer_dir" ]; then
         mkdir -p "$workspace_devcontainer_dir"
-        cp "$SCRIPT_DIR/devcontainer.json" "$workspace_devcontainer_dir/devcontainer.json"
-        sed 's#- \.\./\.\.:/workspace/server-base#- ..:/workspace/server-base#' \
-            "$SCRIPT_DIR/docker-compose.yml" > "$workspace_devcontainer_dir/docker-compose.yml"
+        cp "$SCRIPT_DIR/workspace-root/devcontainer.json" "$workspace_devcontainer_dir/devcontainer.json"
+        cp "$SCRIPT_DIR/workspace-root/docker-compose.yml" "$workspace_devcontainer_dir/docker-compose.yml"
+        cp "$SCRIPT_DIR/workspace-root/devcontainer-lock.json" "$workspace_devcontainer_dir/devcontainer-lock.json"
+        cp "$SCRIPT_DIR/workspace-root/post-create.sh" "$workspace_devcontainer_dir/post-create.sh"
     fi
 }
 

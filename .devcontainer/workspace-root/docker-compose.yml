@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - ..:/workspace/server-base:cached
+    command: sleep infinity
+    networks:
+      - devnet
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  devnet:
+    name: devnet
+    driver: bridge
