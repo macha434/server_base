@@ -50,6 +50,14 @@ post-create.sh が [server-base-features](https://github.com/macha434/server-bas
 `.code-workspace` の `name` で絵文字付きの `core`/`features` に付け替えており、実際の
 フォルダ名は `server-base-core`/`server-base-features` のまま）。
 
+同時に post-create.sh は `/workspace/server-base/.devcontainer`（本ディレクトリの
+`devcontainer.json`/`docker-compose.yml` の複製。`volumes` の相対パスだけ書き換え
+てある）も生成する。VS Code は `.code-workspace` と同じ場所に `.devcontainer` が
+あれば最優先で使うため、これでホスト側から `server-base.code-workspace` を直接
+開いて "Reopen in Container" しても picker が出ず本リポジトリの設定が使われる
+（シンボリックリンクだと `volumes: ../..` の相対パス解決が1階層ずれるため不採用）。
+本体を変更したら複製側にも反映すること（既存の複製は上書きされない）。
+
 ## 開発環境の構成
 
 コンテナ内では、ホスト側の `server-base-core` リポジトリ（フォルダ名はリポジトリ名のまま）

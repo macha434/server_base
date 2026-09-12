@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# BASH_SOURCE から逆算し、cwd に依存せず server-base-core / server-base を検出する
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CORE_DIR="$(dirname "$SCRIPT_DIR")"
+SERVER_BASE_ROOT="$(dirname "$CORE_DIR")"
+
 # システムライブラリの導入（PyGObject / PyAudio のネイティブビルド・音声再生に必要）
 install_system_packages() {
     sudo apt-get update
@@ -13,7 +18,7 @@ install_system_packages() {
 
 # Git の設定
 configure_git() {
-    git config --global --add safe.directory /workspace/server-base/server-base-core
+    git config --global --add safe.directory "$CORE_DIR"
 }
 
 # .claude の所有者を変更する (root でマウントされるため)
@@ -42,26 +47,29 @@ setup_uv() {
     curl -LsSf https://astral.sh/uv/install.sh | sh
     # インストール直後はこのシェル呼び出し内でPATHがまだ更新されていない可能性があるため、
     # インストール先を直接指定して実行する
-    (cd /workspace/server-base/server-base-core && "$HOME/.local/bin/uv" sync)
+    (cd "$CORE_DIR" && "$HOME/.local/bin/uv" sync)
 }
 
 # server-base-features を兄弟ディレクトリとして clone し、VS Code のマルチルート
 # workspace(server-base-core本体 + features)を用意する。
-# `/workspace/server-base` はdocker-composeでホストの server-base ディレクトリを
+# `$SERVER_BASE_ROOT` はdocker-composeでホストの server-base ディレクトリを
 # 丸ごとbind mountしているため、所有権は既にホスト側と一致しており chown は不要。
-# clone・workspaceファイルとも「無ければ作る、あれば触らない」(未コミットの
-# 作業や手動編集を消さないため。compose.generated.yaml等の「都度再生成する
-# 生成物」とは扱いが異なる)。
+# clone・workspaceファイル・.devcontainerとも「無ければ作る、あれば触らない」
+# (未コミットの作業や手動編集を消さないため)。
 setup_workspace() {
-    if [ ! -d /workspace/server-base/server-base-features ]; then
+    local features_dir="$SERVER_BASE_ROOT/server-base-features"
+    local workspace_file="$SERVER_BASE_ROOT/server-base.code-workspace"
+    local workspace_devcontainer_dir="$SERVER_BASE_ROOT/.devcontainer"
+
+    if [ ! -d "$features_dir" ]; then
         # server-base-features は補助的なworkspace用リポジトリなので、
         # 未公開・ネットワーク不通等で失敗してもpost-create.sh全体を止めない。
-        git clone https://github.com/macha434/server-base-features.git /workspace/server-base/server-base-features \
-            || echo "警告: server-base-features のcloneに失敗しました(後で手動で '/workspace/server-base/server-base-features' に clone してください)" >&2
+        git clone https://github.com/macha434/server-base-features.git "$features_dir" \
+            || echo "警告: server-base-features のcloneに失敗しました(後で手動で '$features_dir' に clone してください)" >&2
     fi
 
-    if [ ! -f /workspace/server-base/server-base.code-workspace ]; then
-        cat > /workspace/server-base/server-base.code-workspace <<'JSON'
+    if [ ! -f "$workspace_file" ]; then
+        cat > "$workspace_file" <<'JSON'
 {
   "folders": [
     { "name": "🛠️ core", "path": "server-base-core" },
@@ -69,6 +77,17 @@ setup_workspace() {
   ]
 }
 JSON
+    fi
+
+    # VS Code は .code-workspace と同じ場所に .devcontainer があれば最優先で使うため
+    # 複製する(シンボリックリンクだと docker-compose.yml の volumes(../..) の相対パス
+    # 解決が1階層ずれるため不採用)。post-create.sh 自体はworkspaceFolder基準で実体が
+    # 呼ばれるためコピー不要。core側のdevcontainer.jsonを変更したら反映すること。
+    if [ ! -d "$workspace_devcontainer_dir" ]; then
+        mkdir -p "$workspace_devcontainer_dir"
+        cp "$SCRIPT_DIR/devcontainer.json" "$workspace_devcontainer_dir/devcontainer.json"
+        sed 's#- \.\./\.\.:/workspace/server-base#- ..:/workspace/server-base#' \
+            "$SCRIPT_DIR/docker-compose.yml" > "$workspace_devcontainer_dir/docker-compose.yml"
     fi
 }
 
