@@ -3,9 +3,6 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "workspace",
   "workspaceFolder": "/workspace",
-  "mounts": [
-    "source=claude-code-config,target=/home/vscode/.claude,type=volume"
-  ],
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
@@ -15,9 +12,8 @@
       "userGid": "1000"
     },
     "ghcr.io/devcontainers/features/node:2.1.0": {},
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:4.0.0": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4.1.0": {
       "moby": false
     }
   },

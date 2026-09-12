@@ -1,6 +1,6 @@
 lockfile_version: '1'
-generated_at: '2026-07-31T11:31:51.449564+00:00'
-apm_version: 0.26.0
+generated_at: '2026-09-12T05:44:23.067940+00:00'
+apm_version: 0.30.0
 dependencies:
 - repo_url: anthropics/claude-plugins-official
   name: claude-code-setup
@@ -9,7 +9,7 @@ dependencies:
   version: 1.0.0
   virtual_path: plugins/claude-code-setup
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: skill_bundle
   deployed_files:
   - .claude/skills/claude-automation-recommender
   - .claude/skills/claude-automation-recommender/SKILL.md
@@ -33,7 +33,7 @@ dependencies:
   version: 1.0.0
   virtual_path: plugins/claude-md-management
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: skill_bundle
   deployed_files:
   - .claude/commands/revise-claude-md.md
   - .claude/skills/claude-md-improver
@@ -55,7 +55,7 @@ dependencies:
   version: 0.10.0
   virtual_path: plugins/claude-security
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: skill_bundle
   deployed_files:
   - .claude/agents/claude-security.md
   - .claude/agents/explore.md
@@ -99,7 +99,7 @@ dependencies:
   version: cf99fc2
   virtual_path: plugins/commit-commands
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: apm_package
   deployed_files:
   - .claude/commands/clean_gone.md
   - .claude/commands/commit-push-pr.md
@@ -116,7 +116,7 @@ dependencies:
   version: cf99fc2
   virtual_path: plugins/feature-dev
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: apm_package
   deployed_files:
   - .claude/agents/code-architect.md
   - .claude/agents/code-explorer.md
@@ -133,7 +133,7 @@ dependencies:
   version: cf99fc2
   virtual_path: plugins/hookify
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: skill_bundle
   deployed_files:
   - .claude/agents/conversation-analyzer.md
   - .claude/commands/configure.md
@@ -167,7 +167,7 @@ dependencies:
   version: cf99fc2
   virtual_path: plugins/pr-review-toolkit
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: apm_package
   deployed_files:
   - .claude/agents/code-reviewer.md
   - .claude/agents/code-simplifier.md
@@ -192,7 +192,7 @@ dependencies:
   version: 2.0.6
   virtual_path: plugins/security-guidance
   is_virtual: true
-  package_type: marketplace_plugin
+  package_type: apm_package
   deployed_files:
   - .claude/hooks/security-guidance/hooks/_base.py
   - .claude/hooks/security-guidance/hooks/diffstate.py
@@ -223,7 +223,7 @@ dependencies:
   host: github.com
   resolved_commit: 44c9b2d6e889982ac18c27d05a19fefe335194e1
   version: 6.2.0
-  package_type: marketplace_plugin
+  package_type: skill_bundle
   deployed_files:
   - .claude/hooks/superpowers/hooks/run-hook.cmd
   - .claude/hooks/superpowers/hooks/session-start

@@ -152,6 +152,13 @@ services:
         aliases: [${APP_NAME}]
     # ホストへの publish を取り消す（nginx/TLS 経由のみに強制、ポート採番も不要に）
     ports: !reset []
+    # setup-dns.sh がホストのsystemd-resolvedに設定する DNS=127.0.0.1 が
+    # upstream server として紛れ込むと、コンテナの埋め込みDNS(127.0.0.11)が
+    # その127.0.0.1（コンテナ自身のloopback、何も listen していない）に転送しようとして
+    # 外部ドメインの名前解決が失敗することがある。ここで明示的に到達可能なDNSを指定して回避する。
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     # scripts/gen-nginx-conf.py が読む vhost 定義
     labels:
       site.host: ${HOST_SUBDOMAIN}.ubuntu.local
