@@ -13,13 +13,22 @@
 Dev Container内のターミナルで以下を実行：
 
 ```bash
-cd /workspace
+cd /workspace/server-base/core
 ./scripts/up.sh
 ```
 
-`workspace` コンテナはホストの `/var/run/docker.sock` をマウントしているため、
-`core/compose.yaml`（nginx + dnsmasq）と `stacks/*/docker-compose.yml` はホスト側の
-Docker デーモン上にそのまま起動する。
+`workspace` コンテナは `docker-in-docker` feature による**隔離されたDockerデーモン**
+(DinD)を使う。`core/compose.yaml`（nginx + dnsmasq）と `stacks/*/docker-compose.yml`
+は、ホスト側のDockerデーモンではなく、このコンテナ内で完結したDinD上に起動する
+（`core/compose.yaml` が `./nginx/conf.d` 等の相対パスbind mountを使っており、
+ホストのデーモンを直接共有する方式(docker outside of docker)だとdevcontainer内の
+パスとホストの実パスが食い違ってbind mountが壊れうるため、あえてDinDに一本化している）。
+
+DinD配下のコンテナがpublishしたポートは `workspace` コンテナ自身のネットワーク名前空間に
+乗るため、`devcontainer.json` の `forwardPorts: [80, 443]` がそのまま拾い、WSL経由で
+Windows側からも `curl`/ブラウザで到達できる想定。もし到達できない場合のフォールバックとして、
+`.devcontainer/docker-compose.yml` の `workspace` サービスに
+`ports: ["80:80", "443:443"]` を追加する(Composeネイティブのpublish機能を使う)。
 
 ### 3. 動作確認
 
@@ -31,7 +40,20 @@ curl http://localhost/health
 curl -k https://time.ubuntu.local/
 ```
 
+### 4. server-base-features と並べて開く(任意)
+
+post-create.sh が [server-base-features](https://github.com/macha434/server-base-features)
+を `/workspace/server-base/features` に clone し、`/workspace/server-base/server-base.code-workspace`
+を生成する(初回のみ。既に存在する場合は上書きしない)。コンテナにアタッチした状態で
+`File > Open Workspace from File...` からこのファイルを開くと、`server_base` 本体と
+`server-base-features` が並んだマルチルート表示になる。
+
 ## 開発環境の構成
+
+コンテナ内では `server_base` リポジトリ自体は `/workspace/server-base/core` にマウントされる
+（`workspaceFolder` もここ）。`/workspace/server-base/features` は上記の
+`server-base-features`（devcontainer Feature本体）のclone置き場で、どちらも
+`/workspace/server-base` 配下の兄弟ディレクトリになる。
 
 ```
 .devcontainer/

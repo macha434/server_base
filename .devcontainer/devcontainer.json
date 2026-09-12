@@ -2,7 +2,7 @@
   "name": "Nginx Server Base",
   "dockerComposeFile": "docker-compose.yml",
   "service": "workspace",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspace/server-base/core",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
