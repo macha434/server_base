@@ -13,7 +13,7 @@
 Dev Container内のターミナルで以下を実行：
 
 ```bash
-cd /workspace/server-base/core
+cd /workspace/server-base/server-base-core
 ./scripts/up.sh
 ```
 
@@ -45,15 +45,17 @@ curl -k https://time.ubuntu.local/
 post-create.sh が [server-base-features](https://github.com/macha434/server-base-features)
 を `/workspace/server-base/features` に clone し、`/workspace/server-base/server-base.code-workspace`
 を生成する(初回のみ。既に存在する場合は上書きしない)。コンテナにアタッチした状態で
-`File > Open Workspace from File...` からこのファイルを開くと、`server-base-core` 本体と
-`server-base-features` が並んだマルチルート表示になる。
+`File > Open Workspace from File...` からこのファイルを開くと、`core`（本リポジトリ）と
+`features`（`server-base-features`）が並んだマルチルート表示になる（表示名は
+`.code-workspace` の `name` で `core`/`features` に付け替えており、実際のフォルダ名は
+`server-base-core`/`features` のまま）。
 
 ## 開発環境の構成
 
-コンテナ内では `server-base-core` リポジトリ自体は `/workspace/server-base/core` にマウントされる
-（`workspaceFolder` もここ）。`/workspace/server-base/features` は上記の
-`server-base-features`（devcontainer Feature本体）のclone置き場で、どちらも
-`/workspace/server-base` 配下の兄弟ディレクトリになる。
+コンテナ内では、ホスト側の `server-base-core` リポジトリ（フォルダ名はリポジトリ名のまま）
+がそのまま `/workspace/server-base/server-base-core` にマウントされる（`workspaceFolder`
+もここ）。`/workspace/server-base/features` は上記の `server-base-features` のclone置き場で、
+どちらも `/workspace/server-base` 配下の兄弟ディレクトリになる。
 
 ```
 .devcontainer/
