@@ -193,9 +193,14 @@ class DashboardScreen(Screen):
 
     def _render_rows(self, rows: list[data.DashboardRow]) -> None:
         table = self.query_one("#dashboard-table", DataTable)
+        # 5秒ごとの自動更新でtable.clear()するとカーソルが先頭行に戻ってしまうため、
+        # 更新前のカーソル位置を保存し、再描画後に(行数が減っていた場合は末尾に丸めて)復元する。
+        previous_cursor_row = table.cursor_row
         table.clear()
         for row in rows:
             table.add_row(row.category, row.name, row.state, row.url, row.reachable)
+        if previous_cursor_row is not None and table.row_count:
+            table.move_cursor(row=min(previous_cursor_row, table.row_count - 1))
 
     @work
     async def action_restart_all(self) -> None:
