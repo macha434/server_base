@@ -160,21 +160,45 @@ git clone https://github.com/coresync-fukuhara/time-announcement-frontend ../tim
 `scripts/*.sh` を個別に呼ぶ代わりに、統合CLI `server-base` でも同じ操作ができる。
 `./scripts/install-cli.sh` を一度実行すると `~/.local/bin/server-base` に
 シンボリックリンクが張られ、リポジトリの外からでも `server-base` として呼べる。
+`install-cli.sh` は内部で [uv](https://docs.astral.sh/uv/) を使って依存関係(`.venv`)を
+用意するため、事前に uv のインストールが必要(`curl -LsSf https://astral.sh/uv/install.sh | sh`)。
+
+引数無しで `server-base` を実行する(または `server-base tui`)とTUIダッシュボードが
+起動する。従来のサブコマンド群は `server-base cli <サブコマンド>` として呼び出す。
 
 ```bash
-server-base init                 # DNS+証明書発行+core起動(初回セットアップ一括)
-server-base service add          # systemdユーザーサービスの登録
-server-base service remove       # 上記の解除
-server-base app add <app名> <repo> <compose> [--service NAME] <subdomain> <port>
-server-base app remove <app名>   # 確認プロンプトあり(-yで省略可)
-server-base status                # core+各アプリの稼働状況・URL・到達性を一覧表示
-server-base logs [app名]          # 省略時はcore(nginx/dnsmasq)
-server-base restart [app名]       # 省略時は全体
-server-base doctor                # 起動前の環境チェック一式
-server-base cert renew [domain]   # TLS証明書の再発行(省略時ubuntu.local)
+server-base                              # 引数無し → TUIダッシュボード起動
+server-base tui                          # 上と同じ
+
+server-base cli init                 # DNS+証明書発行+core起動(初回セットアップ一括)
+server-base cli service add          # systemdユーザーサービスの登録
+server-base cli service remove       # 上記の解除
+server-base cli app add <app名> <repo> <compose> [--service NAME] <subdomain> <port>
+server-base cli app remove <app名>   # 確認プロンプトあり(-yで省略可)
+server-base cli status                # core+各アプリの稼働状況・URL・到達性を一覧表示
+server-base cli logs [app名]          # 省略時はcore(nginx/dnsmasq)
+server-base cli restart [app名]       # 省略時は全体
+server-base cli doctor                # 起動前の環境チェック一式
+server-base cli cert renew [domain]   # TLS証明書の再発行(省略時ubuntu.local)
 ```
 
-各サブコマンドの詳細は `server-base <サブコマンド> --help` を参照。
+各サブコマンドの詳細は `server-base cli <サブコマンド> --help` を参照。
+
+### TUIダッシュボードのキー操作
+
+| キー | 動作 |
+| --- | --- |
+| `r` | ダッシュボードを手動更新(5秒毎に自動更新もされる) |
+| `R` | core+全アプリを再起動(down→up) |
+| `Enter` | ダッシュボードで選択中のアプリ行のみ再起動 |
+| `d` | Doctor(環境チェック)画面 |
+| `l` | Logs(ライブテール)画面。core/アプリを選んで表示 |
+| `a` | アプリ管理画面(`n`で追加フォーム、Enterで削除) |
+| `i` | 初回セットアップ(init)を実行 |
+| `c` | TLS証明書を再発行 |
+| `s` | systemdサービスの登録/解除 |
+| `b` / `Esc` | ダッシュボードに戻る(モーダル表示中はキャンセル) |
+| `q` | 終了 |
 
 ## 日常操作
 

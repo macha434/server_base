@@ -37,5 +37,8 @@ apm_modules/
 __pycache__/
 *.pyc
 
+# uv sync が作る仮想環境 (uv.lock から都度再生成できるためコミット不要)
+.venv/
+
 # Claude Code サブエージェント用の一時git worktree(セッション内の作業スクラッチ)
 .claude/worktrees/

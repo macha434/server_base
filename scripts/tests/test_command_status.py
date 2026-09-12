@@ -88,7 +88,7 @@ def test_status_command_prints_core_and_each_app(capsys):
          patch("server_base_cli.commands.status._systemd_enabled", return_value=True), \
          patch("server_base_cli.commands.status.stacks.app_site_host", return_value="example.ubuntu.local"):
         parser = build_parser()
-        args = parser.parse_args(["status"])
+        args = parser.parse_args(["cli", "status"])
         code = args.func(args)
 
     out = capsys.readouterr().out
@@ -107,7 +107,7 @@ def test_status_handles_missing_site_host_label(capsys):
          patch("server_base_cli.commands.status._systemd_enabled", return_value=True), \
          patch("server_base_cli.commands.status.stacks.app_site_host", return_value=None):
         parser = build_parser()
-        args = parser.parse_args(["status"])
+        args = parser.parse_args(["cli", "status"])
         code = args.func(args)
 
     out = capsys.readouterr().out
@@ -124,7 +124,7 @@ def test_status_handles_broken_app_services(capsys):
          ), \
          patch("server_base_cli.commands.status._systemd_enabled", return_value=True):
         parser = build_parser()
-        args = parser.parse_args(["status"])
+        args = parser.parse_args(["cli", "status"])
         code = args.func(args)
 
     out = capsys.readouterr().out
@@ -144,7 +144,7 @@ def test_status_handles_broken_app_site_host(capsys):
          patch("server_base_cli.commands.status._container_state", return_value="running"), \
          patch("server_base_cli.commands.status._systemd_enabled", return_value=True):
         parser = build_parser()
-        args = parser.parse_args(["status"])
+        args = parser.parse_args(["cli", "status"])
         code = args.func(args)
 
     out = capsys.readouterr().out

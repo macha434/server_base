@@ -12,7 +12,7 @@ def test_init_runs_setup_dns_then_cert_then_up_in_order():
 
     with patch("server_base_cli.commands.init.shell.run_script", side_effect=fake_run_script):
         parser = build_parser()
-        args = parser.parse_args(["init"])
+        args = parser.parse_args(["cli", "init"])
         code = args.func(args)
 
     assert calls == [
@@ -32,7 +32,7 @@ def test_init_stops_after_first_failure():
 
     with patch("server_base_cli.commands.init.shell.run_script", side_effect=fake_run_script):
         parser = build_parser()
-        args = parser.parse_args(["init"])
+        args = parser.parse_args(["cli", "init"])
         code = args.func(args)
 
     assert calls == ["setup-dns.sh", "generate-cert.sh"]

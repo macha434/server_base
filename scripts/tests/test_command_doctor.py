@@ -268,7 +268,7 @@ def test_doctor_command_returns_zero_when_no_failures():
     fake_checks = [("A", lambda: ("ok", "fine")), ("B", lambda: ("warn", "meh"))]
     with patch("server_base_cli.commands.doctor._CHECKS", fake_checks):
         parser = build_parser()
-        args = parser.parse_args(["doctor"])
+        args = parser.parse_args(["cli", "doctor"])
         code = args.func(args)
 
     assert code == 0
@@ -278,7 +278,7 @@ def test_doctor_command_returns_one_when_any_failure():
     fake_checks = [("A", lambda: ("ok", "fine")), ("B", lambda: ("fail", "broken"))]
     with patch("server_base_cli.commands.doctor._CHECKS", fake_checks):
         parser = build_parser()
-        args = parser.parse_args(["doctor"])
+        args = parser.parse_args(["cli", "doctor"])
         code = args.func(args)
 
     assert code == 1

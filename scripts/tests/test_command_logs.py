@@ -8,7 +8,7 @@ def test_logs_without_app_targets_core_services():
     with patch("server_base_cli.commands.logs.shell.run") as mock_run:
         mock_run.return_value = 0
         parser = build_parser()
-        args = parser.parse_args(["logs"])
+        args = parser.parse_args(["cli", "logs"])
         code = args.func(args)
 
     mock_run.assert_called_once_with(
@@ -23,7 +23,7 @@ def test_logs_with_app_targets_that_apps_services():
          patch("server_base_cli.commands.logs.shell.run") as mock_run:
         mock_run.return_value = 0
         parser = build_parser()
-        args = parser.parse_args(["logs", "myapp"])
+        args = parser.parse_args(["cli", "logs", "myapp"])
         code = args.func(args)
 
     mock_run.assert_called_once_with(
@@ -36,7 +36,7 @@ def test_logs_with_unknown_app_fails_fast():
     with patch("server_base_cli.commands.logs.stacks.app_exists", return_value=False), \
          patch("server_base_cli.commands.logs.shell.run") as mock_run:
         parser = build_parser()
-        args = parser.parse_args(["logs", "missing-app"])
+        args = parser.parse_args(["cli", "logs", "missing-app"])
         code = args.func(args)
 
     mock_run.assert_not_called()
@@ -48,7 +48,7 @@ def test_logs_returns_1_when_app_services_is_empty(capsys):
          patch("server_base_cli.commands.logs.stacks.app_services", return_value=[]), \
          patch("server_base_cli.commands.logs.shell.run") as mock_run:
         parser = build_parser()
-        args = parser.parse_args(["logs", "myapp"])
+        args = parser.parse_args(["cli", "logs", "myapp"])
         code = args.func(args)
 
     assert code == 1
@@ -66,7 +66,7 @@ def test_logs_returns_1_when_app_services_raises_runtime_error(capsys):
          ), \
          patch("server_base_cli.commands.logs.shell.run") as mock_run:
         parser = build_parser()
-        args = parser.parse_args(["logs", "myapp"])
+        args = parser.parse_args(["cli", "logs", "myapp"])
         code = args.func(args)
 
     assert code == 1

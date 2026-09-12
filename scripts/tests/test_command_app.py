@@ -9,7 +9,7 @@ def test_app_add_passes_through_args_without_service_name():
         mock_run.return_value = 0
         parser = build_parser()
         args = parser.parse_args(
-            ["app", "add", "time-announcement", "../time-announcement-frontend", "deploy/docker-compose.yaml", "time", "3000"]
+            ["cli", "app", "add", "time-announcement", "../time-announcement-frontend", "deploy/docker-compose.yaml", "time", "3000"]
         )
         code = args.func(args)
 
@@ -26,7 +26,7 @@ def test_app_add_inserts_service_name_when_given():
         parser = build_parser()
         args = parser.parse_args(
             [
-                "app", "add", "myapp", "../myapp", "deploy/docker-compose.yaml",
+                "cli", "app", "add", "myapp", "../myapp", "deploy/docker-compose.yaml",
                 "--service", "web", "myapp", "3000",
             ]
         )
@@ -44,7 +44,7 @@ def test_app_add_propagates_failure_exit_code():
         mock_run.return_value = 1
         parser = build_parser()
         args = parser.parse_args(
-            ["app", "add", "myapp", "../myapp", "deploy/docker-compose.yaml", "myapp", "3000"]
+            ["cli", "app", "add", "myapp", "../myapp", "deploy/docker-compose.yaml", "myapp", "3000"]
         )
         code = args.func(args)
 
@@ -57,7 +57,7 @@ from server_base_cli import paths
 def test_app_remove_fails_fast_when_app_not_found():
     with patch("server_base_cli.commands.app.stacks.app_exists", return_value=False):
         parser = build_parser()
-        args = parser.parse_args(["app", "remove", "missing-app"])
+        args = parser.parse_args(["cli", "app", "remove", "missing-app"])
         code = args.func(args)
 
     assert code == 1
@@ -70,7 +70,7 @@ def test_app_remove_aborts_when_user_declines_confirmation():
          patch("server_base_cli.commands.app.shell.run") as mock_run, \
          patch("server_base_cli.commands.app.shutil.rmtree") as mock_rmtree:
         parser = build_parser()
-        args = parser.parse_args(["app", "remove", "myapp"])
+        args = parser.parse_args(["cli", "app", "remove", "myapp"])
         code = args.func(args)
 
     mock_run_script.assert_not_called()
@@ -105,7 +105,7 @@ def test_app_remove_skips_confirmation_with_yes_flag(tmp_path, monkeypatch):
          patch("server_base_cli.commands.app.stacks.app_services", return_value=["web"]), \
          patch("server_base_cli.commands.app.shutil.rmtree", side_effect=fake_rmtree):
         parser = build_parser()
-        args = parser.parse_args(["app", "remove", "myapp", "-y"])
+        args = parser.parse_args(["cli", "app", "remove", "myapp", "-y"])
         code = args.func(args)
 
     assert code == 0
@@ -152,7 +152,7 @@ def test_app_remove_notes_and_continues_when_app_services_is_empty(tmp_path, mon
          patch("server_base_cli.commands.app.stacks.app_services", return_value=[]), \
          patch("server_base_cli.commands.app.shutil.rmtree", side_effect=fake_rmtree):
         parser = build_parser()
-        args = parser.parse_args(["app", "remove", "myapp", "-y"])
+        args = parser.parse_args(["cli", "app", "remove", "myapp", "-y"])
         code = args.func(args)
 
     assert code == 0
@@ -180,7 +180,7 @@ def test_app_remove_stops_when_render_compose_fails(tmp_path, monkeypatch):
     with patch("server_base_cli.commands.app.shell.run_script", return_value=1) as mock_run_script, \
          patch("server_base_cli.commands.app.shell.run") as mock_run:
         parser = build_parser()
-        args = parser.parse_args(["app", "remove", "myapp", "-y"])
+        args = parser.parse_args(["cli", "app", "remove", "myapp", "-y"])
         code = args.func(args)
 
     assert code == 1
@@ -204,7 +204,7 @@ def test_app_remove_returns_1_when_app_services_raises_runtime_error(tmp_path, m
          patch("server_base_cli.commands.app.shell.run") as mock_run, \
          patch("server_base_cli.commands.app.shutil.rmtree") as mock_rmtree:
         parser = build_parser()
-        args = parser.parse_args(["app", "remove", "myapp", "-y"])
+        args = parser.parse_args(["cli", "app", "remove", "myapp", "-y"])
         code = args.func(args)
 
     # RuntimeErrorがトレースバックとして伝播せず、1を返すこと
@@ -240,7 +240,7 @@ def test_app_remove_reports_error_when_rmtree_fails(tmp_path, monkeypatch, capsy
              side_effect=PermissionError(13, "Permission denied"),
          ) as mock_rmtree:
         parser = build_parser()
-        args = parser.parse_args(["app", "remove", "myapp", "-y"])
+        args = parser.parse_args(["cli", "app", "remove", "myapp", "-y"])
         code = args.func(args)
 
     assert code != 0

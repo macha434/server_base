@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
-"""server-base CLI 実行エントリポイント。"""
+"""server-base CLI 実行エントリポイント。
+
+TUI(`textual`)を使うため、`uv sync` で作られる `.venv` があればそちらの
+python に re-exec する。`.venv` が無い場合はシステムの python3 でそのまま
+動く(`cli` サブコマンドは標準ライブラリのみで動作するため)。
+"""
+import os
 import sys
 from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_VENV_PYTHON = _REPO_ROOT / ".venv" / "bin" / "python3"
+
+if _VENV_PYTHON.is_file() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
+    os.execv(str(_VENV_PYTHON), [str(_VENV_PYTHON), *sys.argv])
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
