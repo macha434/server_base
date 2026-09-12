@@ -10,9 +10,14 @@ import sys
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_VENV_PYTHON = _REPO_ROOT / ".venv" / "bin" / "python3"
+_VENV_DIR = _REPO_ROOT / ".venv"
+_VENV_PYTHON = _VENV_DIR / "bin" / "python3"
 
-if _VENV_PYTHON.is_file() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
+# `.venv/bin/python3` はシステムの python (例: /usr/bin/python3.14) へのシンボリック
+# リンクであることが多く、.resolve() で実体パスまで辿ると sys.executable の実体パスと
+# 一致してしまい、システムの python3 で実行中でも「venv 内で実行中」と誤判定してしまう。
+# venv 内かどうかは sys.prefix (site-packages の場所) で判定する。
+if _VENV_PYTHON.is_file() and Path(sys.prefix).resolve() != _VENV_DIR.resolve():
     os.execv(str(_VENV_PYTHON), [str(_VENV_PYTHON), *sys.argv])
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
