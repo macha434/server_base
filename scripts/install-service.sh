@@ -9,7 +9,7 @@ SYSTEMD_DIR="$HOME/.config/systemd/user"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SERVICE_FILE="$REPO_ROOT/core/systemd/$SERVICE_NAME"
 
-echo "=== server_base core-stack systemdユーザーサービスのインストール ==="
+echo "=== server-base-core core-stack systemdユーザーサービスのインストール ==="
 
 if [ ! -f "$SERVICE_FILE" ]; then
     echo "エラー: サービスファイルが見つかりません: $SERVICE_FILE"

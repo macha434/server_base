@@ -45,12 +45,12 @@ curl -k https://time.ubuntu.local/
 post-create.sh が [server-base-features](https://github.com/macha434/server-base-features)
 を `/workspace/server-base/features` に clone し、`/workspace/server-base/server-base.code-workspace`
 を生成する(初回のみ。既に存在する場合は上書きしない)。コンテナにアタッチした状態で
-`File > Open Workspace from File...` からこのファイルを開くと、`server_base` 本体と
+`File > Open Workspace from File...` からこのファイルを開くと、`server-base-core` 本体と
 `server-base-features` が並んだマルチルート表示になる。
 
 ## 開発環境の構成
 
-コンテナ内では `server_base` リポジトリ自体は `/workspace/server-base/core` にマウントされる
+コンテナ内では `server-base-core` リポジトリ自体は `/workspace/server-base/core` にマウントされる
 （`workspaceFolder` もここ）。`/workspace/server-base/features` は上記の
 `server-base-features`（devcontainer Feature本体）のclone置き場で、どちらも
 `/workspace/server-base` 配下の兄弟ディレクトリになる。

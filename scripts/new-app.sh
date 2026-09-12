@@ -2,7 +2,7 @@
 # stacks/<app名>/docker-compose.yml の雛形を生成するスクリプト。
 #
 # アプリ側リポジトリ (deploy/docker-compose.yaml 等) は一切改変せず、
-# server_base 側の stacks/<app名>/docker-compose.yml だけを新規生成する。
+# server-base-core 側の stacks/<app名>/docker-compose.yml だけを新規生成する。
 # 生成されるファイルは:
 #   - include でアプリ側 compose を取り込む（相対パスはこのスクリプトが計算する）
 #   - アプリのサービスを専用ネットワーク net-<app名> に載せる
@@ -260,7 +260,7 @@ EOF
 )
 
 cat > "$OUT" <<YAML
-# ${APP_NAME} を server_base 配下で動かすための差分。
+# ${APP_NAME} を server-base-core 配下で動かすための差分。
 # アプリ側リポジトリ (${REPO_URL}) は改変しない。
 include:
   - path: ${REL_COMPOSE}

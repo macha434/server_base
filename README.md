@@ -1,10 +1,10 @@
-# server_base
+# server-base-core
 
 ## 概要
 
 複数の Web アプリケーションを、アプリ側リポジトリを一切改変せずに追加できる
 Nginx ベースのサーバー基盤環境。Docker Compose の `include` を使って
-server_base を composition root（合成の起点）にし、アプリ側 compose を読み込んで
+server-base-core を composition root（合成の起点）にし、アプリ側 compose を読み込んで
 差分だけを上書きする構成を取る。
 
 背景・設計調査は [docs/catchup/server-onboarding/](docs/catchup/server-onboarding/README.md) を参照。
@@ -12,7 +12,7 @@ server_base を composition root（合成の起点）にし、アプリ側 compo
 ## 構成
 
 ```
-server_base/
+server-base-core/
 ├── core/                        # 基盤サービス一式 (nginx + dnsmasq)
 │   ├── compose.yaml
 │   ├── nginx/
@@ -47,12 +47,12 @@ server_base/
     └── down.sh
 ```
 
-アプリ側リポジトリは server_base の**兄弟ディレクトリ**にクローンする前提（`include` の
+アプリ側リポジトリは server-base-core の**兄弟ディレクトリ**にクローンする前提（`include` の
 相対パスが固定されるため）:
 
 ```
 /opt/                                     ← 任意のベースディレクトリ
-├── server_base/
+├── server-base-core/
 └── my-app/                               # 改変しない (git clone したまま)
     └── deploy/docker-compose.yaml
 ```
@@ -85,9 +85,9 @@ gitignore 対象（詳細は [stacks/README.md](stacks/README.md)）。clone し
 前提: Docker・Docker Compose がインストールされていること。
 
 ```bash
-# 1. server_base をクローン
-git clone <server_baseのURL> server_base
-cd server_base
+# 1. server-base-core をクローン
+git clone <server-base-coreのURL> server-base-core
+cd server-base-core
 
 # 2. *.ubuntu.local のワイルドカードDNSを起動（IPアドレスは省略するとLAN IPを自動検出する）
 ./scripts/setup-dns.sh

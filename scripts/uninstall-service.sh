@@ -6,7 +6,7 @@ set -e
 SERVICE_NAME="core-stack.service"
 SYSTEMD_DIR="$HOME/.config/systemd/user"
 
-echo "=== server_base core-stack systemdユーザーサービスのアンインストール ==="
+echo "=== server-base-core core-stack systemdユーザーサービスのアンインストール ==="
 
 echo "1. サービスを停止しています..."
 # stderrは握りつぶさない。失敗理由が「未インストールだから」なのか、

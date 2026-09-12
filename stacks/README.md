@@ -4,9 +4,9 @@
 
 `stacks/<app名>/docker-compose.yml` は **gitignore 対象**（このディレクトリの
 `README.md` 自体は除く）。`.env`・`ssl/` と同様、「どのアプリを実際にデプロイ
-しているか」はサーバーインスタンスごとに異なる設定であり、server_base は
+しているか」はサーバーインスタンスごとに異なる設定であり、server-base-core は
 汎用フレームワークとして再利用される前提のため、リポジトリにはコミットしない。
-新しく clone した server_base では `stacks/` は空の状態から始まり、
+新しく clone した server-base-core では `stacks/` は空の状態から始まり、
 `scripts/new-app.sh` で自分のアプリを追加していく。
 
 ```bash
@@ -24,7 +24,7 @@
 
 ## 前提
 
-- アプリ側リポジトリは server_base の**兄弟ディレクトリ**にクローンする
+- アプリ側リポジトリは server-base-core の**兄弟ディレクトリ**にクローンする
   （`include` の相対パスが固定されるため）
 - アプリ側リポジトリは一切改変しない
 - 1 stacks ファイル = 1 つの専用ネットワーク（信頼境界）が基本単位。
