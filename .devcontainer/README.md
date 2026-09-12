@@ -51,17 +51,12 @@ post-create.sh が [server-base-features](https://github.com/macha434/server-bas
 フォルダ名は `server-base-core`/`server-base-features` のまま）。
 
 同時に post-create.sh は `/workspace/server-base/.devcontainer`（本ディレクトリの
-`devcontainer.json`/`docker-compose.yml` の複製。`docker-compose.yml` は `volumes` の
-相対パスを階層差ぶんだけ書き換えてある）も生成する。VS Code は `.code-workspace` と
-同じ場所に `.devcontainer` があればそれを最優先で使うため、ホスト側で
-`server-base.code-workspace` を直接開いて "Reopen in Container" しても、
-folders 内を走査した選択ダイアログ(picker)が出ず、本リポジトリの設定がそのまま
-使われる。`.devcontainer` を通常のシンボリックリンクにできないのは、
-`docker-compose.yml` の `volumes: ../..` が実体のある場所基準で解決されるため、
-リンク越しだと階層がずれて bind mount 元を誤るからである。
-本体（この `.devcontainer/`）を変更したら、複製側にも反映すること
-（既に生成済みの場合は post-create.sh が上書きしないため、手動で
-`/workspace/server-base/.devcontainer` を消してから再生成するか、直接編集する）。
+`devcontainer.json`/`docker-compose.yml` の複製。`volumes` の相対パスだけ書き換え
+てある）も生成する。VS Code は `.code-workspace` と同じ場所に `.devcontainer` が
+あれば最優先で使うため、これでホスト側から `server-base.code-workspace` を直接
+開いて "Reopen in Container" しても picker が出ず本リポジトリの設定が使われる
+（シンボリックリンクだと `volumes: ../..` の相対パス解決が1階層ずれるため不採用）。
+本体を変更したら複製側にも反映すること（既存の複製は上書きされない）。
 
 ## 開発環境の構成
 

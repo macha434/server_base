@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# core単体でReopen in Containerした場合と、server-base.code-workspace経由で
-# Reopen in Containerした場合(下記 setup_workspace が用意する複製 devcontainer.json
-# を使う)の両方でこのスクリプトが実行されるが、どちらでもこのファイル自身の実体は
-# server-base-core/.devcontainer/post-create.sh の1箇所だけなので、BASH_SOURCE から
-# 逆算すれば cwd に依存せず server-base-core / server-base のルートを検出できる。
+# BASH_SOURCE から逆算し、cwd に依存せず server-base-core / server-base を検出する
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CORE_DIR="$(dirname "$SCRIPT_DIR")"
 SERVER_BASE_ROOT="$(dirname "$CORE_DIR")"
@@ -59,8 +55,7 @@ setup_uv() {
 # `$SERVER_BASE_ROOT` はdocker-composeでホストの server-base ディレクトリを
 # 丸ごとbind mountしているため、所有権は既にホスト側と一致しており chown は不要。
 # clone・workspaceファイル・.devcontainerとも「無ければ作る、あれば触らない」
-# (未コミットの作業や手動編集を消さないため。compose.generated.yaml等の
-# 「都度再生成する生成物」とは扱いが異なる)。
+# (未コミットの作業や手動編集を消さないため)。
 setup_workspace() {
     local features_dir="$SERVER_BASE_ROOT/server-base-features"
     local workspace_file="$SERVER_BASE_ROOT/server-base.code-workspace"
@@ -84,24 +79,10 @@ setup_workspace() {
 JSON
     fi
 
-    # VS Code は .code-workspace と同じ場所に .devcontainer があればそれを最優先で
-    # 使う。無いと folders 内を走査して選択ダイアログ(picker)を出すことがあるため、
-    # ホストで server-base.code-workspace を直に開いて Reopen in Container しても
-    # 確実に server-base-core/.devcontainer が使われるようにしたい。
-    #
-    # ただしシンボリックリンクでは駄目: docker-compose.yml の volumes は
-    # `../..:/workspace/server-base` という相対パスで、.devcontainer の
-    # 実体がある場所(server-base-core/.devcontainer、2階層上がserver-base)基準で
-    # 解決される。server-base/.devcontainer をそこへのシンボリックリンクにすると
-    # docker compose がリンク先を辿らず「server-base/.devcontainer」という
-    # 見かけ上の位置(1階層上がserver-base)から相対パスを解決してしまい、
-    # bind mount 元がずれる(実測で1階層浅い場所を指した)。
-    # そのため devcontainer.json と docker-compose.yml だけ実体をコピーし、
-    # volumes の相対パスをこの階層に合わせて `..` に直す。post-create.sh自体は
-    # コピーしない(postCreateCommandはworkspaceFolder基準の相対パスなので、
-    # どちらのdevcontainer.json経由でもこの実体ファイルがそのまま実行される)。
-    # core側のdevcontainer.jsonを変更したときは、features/customizations等の
-    # 差分をこちらにも反映すること。
+    # VS Code は .code-workspace と同じ場所に .devcontainer があれば最優先で使うため
+    # 複製する(シンボリックリンクだと docker-compose.yml の volumes(../..) の相対パス
+    # 解決が1階層ずれるため不採用)。post-create.sh 自体はworkspaceFolder基準で実体が
+    # 呼ばれるためコピー不要。core側のdevcontainer.jsonを変更したら反映すること。
     if [ ! -d "$workspace_devcontainer_dir" ]; then
         mkdir -p "$workspace_devcontainer_dir"
         cp "$SCRIPT_DIR/devcontainer.json" "$workspace_devcontainer_dir/devcontainer.json"
