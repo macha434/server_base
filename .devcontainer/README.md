@@ -43,7 +43,7 @@ curl -k https://time.ubuntu.local/
 ### 4. server-base-features と並べて開く(任意)
 
 post-create.sh が [server-base-features](https://github.com/macha434/server-base-features)
-を `/workspace/server-base/features` に clone し、`/workspace/server-base/server-base.code-workspace`
+を `/workspace/server-base/server-base-features` に clone し、`/workspace/server-base/server-base.code-workspace`
 を生成する(初回のみ。既に存在する場合は上書きしない)。コンテナにアタッチした状態で
 `File > Open Workspace from File...` からこのファイルを開くと、`core`（本リポジトリ）と
 `features`（`server-base-features`）が並んだマルチルート表示になる（表示名は
@@ -54,8 +54,9 @@ post-create.sh が [server-base-features](https://github.com/macha434/server-bas
 
 コンテナ内では、ホスト側の `server-base-core` リポジトリ（フォルダ名はリポジトリ名のまま）
 がそのまま `/workspace/server-base/server-base-core` にマウントされる（`workspaceFolder`
-もここ）。`/workspace/server-base/features` は上記の `server-base-features` のclone置き場で、
-どちらも `/workspace/server-base` 配下の兄弟ディレクトリになる。
+もここ）。`/workspace/server-base/server-base-features` は上記の `server-base-features` の
+clone置き場で、どちらも `/workspace/server-base` 配下の兄弟ディレクトリになる（フォルダ名は
+どちらもリポジトリ名のまま）。
 
 ```
 .devcontainer/
