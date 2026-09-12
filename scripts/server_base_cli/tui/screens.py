@@ -371,17 +371,15 @@ class AppAddScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="add-app-form"):
-            yield Label("アプリ名 (app_name)")
-            yield Input(placeholder="myapp", id="input-app-name")
-            yield Label("リポジトリパス (repo_path)")
-            yield Input(placeholder="../myapp-repo", id="input-repo-path")
-            yield Label("composeファイルパス (compose_file)")
-            yield Input(placeholder="docker-compose.yml", id="input-compose-file")
+            yield Label("リポジトリURL (repo_url)")
+            yield Input(placeholder="https://github.com/org/myapp-repo", id="input-repo-url")
             yield Label("サービス名(任意・省略時は自動検出)")
             yield Input(placeholder="", id="input-service-name")
-            yield Label("サブドメイン (subdomain)")
+            yield Label("composeファイルパス(任意・省略時は自動探索)")
+            yield Input(placeholder="deploy/docker-compose.yaml", id="input-compose-file")
+            yield Label("サブドメイン(任意・省略時はsite.subdomainラベル→app名)")
             yield Input(placeholder="myapp", id="input-subdomain")
-            yield Label("ポート番号 (port)")
+            yield Label("ポート番号(任意・省略時はsite.portラベル)")
             yield Input(placeholder="3000", id="input-port")
             yield Button("追加を実行", id="submit-add", variant="primary")
         yield Footer()
@@ -393,37 +391,30 @@ class AppAddScreen(Screen):
         if event.button.id != "submit-add":
             return
 
-        app_name = self._value("#input-app-name")
-        repo_path = self._value("#input-repo-path")
-        compose_file = self._value("#input-compose-file")
-        service_name = self._value("#input-service-name") or None
-        subdomain = self._value("#input-subdomain")
-        port = self._value("#input-port")
-
-        if not all([app_name, repo_path, compose_file, subdomain, port]):
+        repo_url = self._value("#input-repo-url")
+        if not repo_url:
             self.app.bell()
-            self.notify("app_name/repo_path/compose_file/subdomain/port は必須です。", severity="warning")
+            self.notify("repo_url は必須です。", severity="warning")
             return
 
         ns = argparse.Namespace(
-            app_name=app_name,
-            repo_path=repo_path,
-            compose_file=compose_file,
-            service_name=service_name,
-            subdomain=subdomain,
-            port=port,
+            repo_url=repo_url,
+            service_name=self._value("#input-service-name") or None,
+            compose_file=self._value("#input-compose-file") or None,
+            subdomain=self._value("#input-subdomain") or None,
+            port=self._value("#input-port") or None,
         )
-        self._submit(app_name, ns)
+        self._submit(repo_url, ns)
 
     @work
-    async def _submit(self, app_name: str, ns: argparse.Namespace) -> None:
+    async def _submit(self, repo_url: str, ns: argparse.Namespace) -> None:
         # ConfirmScreen→ActionRunningScreenの遷移は`@work`のワーカー内で
         # `push_screen_wait`を使って行う(on_button_pressedの呼び出しフレーム内で
         # 同期的にpush_screenの連鎖を完結させるとtextualの画面遷移がデッドロック
         # する既知の問題があるため)。
         await self.app.confirm_and_run(
-            f"stacks/{app_name}/ を追加します。よろしいですか?",
-            f"アプリ追加: {app_name}",
+            f"{repo_url} を追加します。よろしいですか?",
+            "アプリ追加",
             lambda: actions.add_app(ns),
         )
 

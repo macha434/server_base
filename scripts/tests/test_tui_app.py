@@ -145,8 +145,7 @@ def test_app_add_flow_runs_action_and_returns_to_dashboard():
                 await pilot.pause()
 
                 for field_id, value in [
-                    ("#input-app-name", "newapp"),
-                    ("#input-repo-path", "../newapp"),
+                    ("#input-repo-url", "https://github.com/org/newapp"),
                     ("#input-compose-file", "docker-compose.yml"),
                     ("#input-subdomain", "newapp"),
                     ("#input-port", "3000"),

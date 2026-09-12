@@ -9,10 +9,15 @@ from .. import paths, shell, stacks
 
 
 def _add(args: argparse.Namespace) -> int:
-    cmd_args = [args.app_name, args.repo_path, args.compose_file]
+    cmd_args = [args.repo_url]
     if args.service_name:
-        cmd_args.append(args.service_name)
-    cmd_args += [args.subdomain, args.port]
+        cmd_args += ["--service", args.service_name]
+    if args.compose_file:
+        cmd_args += ["--compose-file", args.compose_file]
+    if args.subdomain:
+        cmd_args += ["--subdomain", args.subdomain]
+    if args.port:
+        cmd_args += ["--port", args.port]
     return shell.run_script("new-app.sh", cmd_args)
 
 
@@ -79,17 +84,31 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     app_sub = parser.add_subparsers(dest="app_command", required=True)
 
     add_parser = app_sub.add_parser("add", help="新しいアプリを stacks/ に追加する")
-    add_parser.add_argument("app_name", help="stacks/<app名>/ のディレクトリ名")
-    add_parser.add_argument("repo_path", help="アプリ側リポジトリへの相対/絶対パス")
-    add_parser.add_argument("compose_file", help="アプリ側リポジトリから見たcomposeファイルのパス")
+    add_parser.add_argument("repo_url", help="アプリ側リポジトリのgit URL(../<app名>に未cloneならclone)")
     add_parser.add_argument(
         "--service",
         dest="service_name",
         default=None,
         help="アプリ側composeのサービス名(サービスが1個だけなら省略可・自動検出)",
     )
-    add_parser.add_argument("subdomain", help="<subdomain>.ubuntu.local で公開する")
-    add_parser.add_argument("port", help="アプリがリッスンするポート番号")
+    add_parser.add_argument(
+        "--compose-file",
+        dest="compose_file",
+        default=None,
+        help="アプリ側composeファイルのパス(省略時はdeploy/docker-compose.yaml等を自動探索)",
+    )
+    add_parser.add_argument(
+        "--subdomain",
+        dest="subdomain",
+        default=None,
+        help="<subdomain>.ubuntu.local で公開する(省略時はsite.subdomainラベル→app名)",
+    )
+    add_parser.add_argument(
+        "--port",
+        dest="port",
+        default=None,
+        help="アプリがリッスンするポート番号(省略時はsite.portラベルを読む)",
+    )
     add_parser.set_defaults(func=_add)
 
     remove_parser = app_sub.add_parser("remove", help="アプリを stacks/ から削除する")

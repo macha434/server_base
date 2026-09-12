@@ -21,9 +21,10 @@ server_base の運用スクリプト一式。各スクリプトの詳しい使�
 
 ## アプリを追加する流れ
 
-1. アプリ側リポジトリを server_base の兄弟ディレクトリにクローン
-2. `./scripts/new-app.sh <app名> <リポジトリパス> <composeファイル> [<サービス名>] <サブドメイン> <ポート>`
-   (アプリ側composeのサービスが1個だけなら`<サービス名>`は省略可。自動検出する)
+1. アプリ側composeの対象サービスに `site.port`(必須)・`site.subdomain`(任意)ラベルを付与
+2. `./scripts/new-app.sh <repoのURL>`
+   (リポジトリは`../<app名>`に自動clone。compose/サービス名/サブドメイン/ポートは自動検出、
+   `--service`/`--compose-file`/`--subdomain`/`--port`で個別上書き可)
 3. `./scripts/up.sh`
 
 詳細はルートの [README.md](../README.md) を参照。

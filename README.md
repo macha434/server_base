@@ -125,14 +125,20 @@ curl -k https://ubuntu.local/health
 
 ## 新しいアプリケーションの追加方法
 
-```bash
-# 1. アプリを兄弟ディレクトリにクローン（例）
-git clone <アプリのgit URL> ../my-app
+`new-app.sh` はアプリ側リポジトリのURLだけで動く。サブドメイン・ポート番号・compose
+ファイルの場所は、アプリ側composeの対象サービスに付与された `labels` から自動検出する
+（規約の詳細は [docs/superpowers/specs/2026-09-12-app-compose-convention-design.md](docs/superpowers/specs/2026-09-12-app-compose-convention-design.md)）。
 
-# 2. stacks/<app名>/docker-compose.yml を生成
-# (アプリ側composeのサービスが1個だけなら<サービス名>は省略可。自動検出する)
-./scripts/new-app.sh my-app ../my-app deploy/docker-compose.yaml my-app 3000
-# サービスが複数ある場合は明示する: ... deploy/docker-compose.yaml <サービス名> my-app 3000
+```bash
+# 1. アプリ側リポジトリ(の対象サービス)に labels を付与しておく(devcontainerを
+#    使っているなら、この規約はClaude Codeスキル経由で自動的に反映される想定。
+#    手動で書く場合は以下のように追記する)
+#      labels:
+#        site.port: "3000"        # 必須: コンテナ内でリッスンしているポート
+#        site.subdomain: "my-app" # 任意: 省略時はリポジトリ名を使う
+
+# 2. stacks/<app名>/docker-compose.yml を生成(../my-app に未cloneなら自動clone)
+./scripts/new-app.sh <アプリのgit URL>
 
 # 3. アプリ側 compose に override していないサービス（DB 等）があれば
 #    stacks/my-app/docker-compose.yml に追記して net-my-app に載せる
@@ -141,16 +147,28 @@ git clone <アプリのgit URL> ../my-app
 ./scripts/up.sh
 ```
 
-`https://my-app.ubuntu.local/` でアクセスできる。停止は `./scripts/down.sh`。
+`https://my-app.ubuntu.local/` でアクセスできる（サブドメインは `site.subdomain` ラベルか
+リポジトリ名）。停止は `./scripts/down.sh`。
+
+compose ファイルの場所・サービス名・サブドメイン・ポート番号は、それぞれ
+`--compose-file` / `--service` / `--subdomain` / `--port` で個別に上書きできる
+（`./scripts/new-app.sh --help` 参照）。
 
 ### 具体例（time-announcement-frontend）
 
-サービスが1個だけのアプリなら `<サービス名>` を省略できる（自動検出する）:
+`deploy/docker-compose.yaml` の `schedule-ui` サービスに `site.port: "3000"` ラベルが
+付与済みなら、以下だけで追加できる:
 
 ```bash
-git clone https://github.com/coresync-fukuhara/time-announcement-frontend ../time-announcement-frontend
-./scripts/new-app.sh time-announcement ../time-announcement-frontend deploy/docker-compose.yaml time 3000
+./scripts/new-app.sh https://github.com/coresync-fukuhara/time-announcement-frontend
 ./scripts/up.sh
+```
+
+サブドメインは `site.subdomain` ラベルが無ければリポジトリ名(`time-announcement-frontend`)に
+なるので、`time` にしたい場合は `--subdomain time` を付ける:
+
+```bash
+./scripts/new-app.sh https://github.com/coresync-fukuhara/time-announcement-frontend --subdomain time
 ```
 
 `https://time.ubuntu.local/` でアクセスできる。
@@ -173,7 +191,7 @@ server-base tui                          # 上と同じ
 server-base cli init                 # DNS+証明書発行+core起動(初回セットアップ一括)
 server-base cli service add          # systemdユーザーサービスの登録
 server-base cli service remove       # 上記の解除
-server-base cli app add <app名> <repo> <compose> [--service NAME] <subdomain> <port>
+server-base cli app add <repoのURL> [--service NAME] [--compose-file PATH] [--subdomain NAME] [--port N]
 server-base cli app remove <app名>   # 確認プロンプトあり(-yで省略可)
 server-base cli status                # core+各アプリの稼働状況・URL・到達性を一覧表示
 server-base cli logs [app名]          # 省略時はcore(nginx/dnsmasq)

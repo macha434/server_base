@@ -46,10 +46,15 @@ def _run_script_capture(script_name: str, args: Sequence[str] = ()) -> tuple[int
 
 def add_app(ns: argparse.Namespace) -> tuple[bool, str]:
     """`commands.app._add` 相当。new-app.sh を出力キャプチャ付きで実行する。"""
-    cmd_args = [ns.app_name, ns.repo_path, ns.compose_file]
+    cmd_args = [ns.repo_url]
     if ns.service_name:
-        cmd_args.append(ns.service_name)
-    cmd_args += [ns.subdomain, ns.port]
+        cmd_args += ["--service", ns.service_name]
+    if ns.compose_file:
+        cmd_args += ["--compose-file", ns.compose_file]
+    if ns.subdomain:
+        cmd_args += ["--subdomain", ns.subdomain]
+    if ns.port:
+        cmd_args += ["--port", ns.port]
     code, output = _run_script_capture("new-app.sh", cmd_args)
     return code == 0, output
 

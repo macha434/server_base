@@ -10,11 +10,17 @@
 `scripts/new-app.sh` で自分のアプリを追加していく。
 
 ```bash
-./scripts/new-app.sh <app名> <リポジトリパス> <composeファイル> [<サービス名>] <サブドメイン> <ポート>
+./scripts/new-app.sh <repoのURL> [--service NAME] [--compose-file PATH] [--subdomain NAME] [--port N]
 ```
 
-`<サービス名>` は省略可。アプリ側composeのサービスが1個だけなら自動検出する
-(2個以上ある場合は明示が必要)。
+`<repoのURL>` のみが必須。app名はリポジトリ名から導出し、`../<app名>` に未cloneなら
+自動でcloneする。`--service`・`--compose-file`はそれぞれ省略可(アプリ側composeのサービスが
+1個だけなら自動検出、composeファイルも`deploy/docker-compose.yaml`等を自動探索)。
+`--subdomain`・`--port`も省略可で、アプリ側composeの対象サービスに付与された
+`site.subdomain`・`site.port` ラベルから自動検出する(`site.port`は必須の情報なので、
+ラベルも`--port`指定も無い場合はエラーになる)。詳細な規約は
+[docs/superpowers/specs/2026-09-12-app-compose-convention-design.md](../docs/superpowers/specs/2026-09-12-app-compose-convention-design.md)
+を参照。
 
 ## 前提
 
