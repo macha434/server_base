@@ -178,7 +178,9 @@ class DashboardScreen(Screen):
 
     def on_mount(self) -> None:
         table = self.query_one("#dashboard-table", DataTable)
-        table.add_columns("区分", "名前", "状態", "URL", "到達性")
+        _, _, self._col_state, self._col_url, self._col_reachable = table.add_columns(
+            "区分", "名前", "状態", "URL", "到達性"
+        )
         table.cursor_type = "row"
         self.refresh_data()
         self.set_interval(5, self.refresh_data)
@@ -192,15 +194,26 @@ class DashboardScreen(Screen):
         self.app.call_from_thread(self._render_rows, rows)
 
     def _render_rows(self, rows: list[data.DashboardRow]) -> None:
+        # 5秒ごとの自動更新のたびにtable.clear()して全行を作り直すと、カーソル位置や
+        # スクロール位置が毎回先頭にリセットされてしまう。行を"区分:名前"のkeyで
+        # 識別し、既存行はupdate_cellでセルだけ更新する(add_row/remove_rowは行の
+        # 増減があった場合のみ)ことで、clear()を呼ばずにカーソル/スクロールを
+        # 触らないようにする。
         table = self.query_one("#dashboard-table", DataTable)
-        # 5秒ごとの自動更新でtable.clear()するとカーソルが先頭行に戻ってしまうため、
-        # 更新前のカーソル位置を保存し、再描画後に(行数が減っていた場合は末尾に丸めて)復元する。
-        previous_cursor_row = table.cursor_row
-        table.clear()
+        seen_keys: set[str] = set()
         for row in rows:
-            table.add_row(row.category, row.name, row.state, row.url, row.reachable)
-        if previous_cursor_row is not None and table.row_count:
-            table.move_cursor(row=min(previous_cursor_row, table.row_count - 1))
+            key = f"{row.category}:{row.name}"
+            seen_keys.add(key)
+            if key in table.rows:
+                table.update_cell(key, self._col_state, row.state)
+                table.update_cell(key, self._col_url, row.url)
+                table.update_cell(key, self._col_reachable, row.reachable)
+            else:
+                table.add_row(row.category, row.name, row.state, row.url, row.reachable, key=key)
+
+        stale_keys = [row_key.value for row_key in table.rows if row_key.value not in seen_keys]
+        for key in stale_keys:
+            table.remove_row(key)
 
     @work
     async def action_restart_all(self) -> None:
