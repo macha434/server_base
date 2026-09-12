@@ -36,3 +36,6 @@ apm_modules/
 # Python バイトコードキャッシュ (環境依存の生成物)
 __pycache__/
 *.pyc
+
+# Claude Code サブエージェント用の一時git worktree(セッション内の作業スクラッチ)
+.claude/worktrees/

@@ -15,6 +15,9 @@ server_base の運用スクリプト一式。各スクリプトの詳しい使�
 | `setup-dns.sh` | `core/dnsmasq/` の `*.ubuntu.local` ワイルドカードDNSをセットアップ。詳細は [core/dnsmasq/README.md](../core/dnsmasq/README.md) |
 | `install-service.sh` | `core/systemd/core-stack.service` を systemd ユーザーサービスとして登録。詳細は [core/systemd/README.md](../core/systemd/README.md) |
 | `uninstall-service.sh` | 上記の登録解除 |
+| `server-base` | `up.sh`/`down.sh`/`new-app.sh`等をラップした統合CLI。`init`/`service add`/`service remove`/`app add`/`app remove`/`status`/`logs`/`restart`/`doctor`/`cert renew` を提供。詳細は `./scripts/server-base --help` |
+| `install-cli.sh` | `server-base` を `~/.local/bin` にシンボリックリンクし、どこからでも実行できるようにする |
+| `uninstall-cli.sh` | 上記の解除 |
 
 ## アプリを追加する流れ
 
