@@ -50,11 +50,10 @@ post-create.sh が [server-base-features](https://github.com/macha434/server-bas
 
 ## 開発環境の構成
 
-コンテナ内では `server-base-core` リポジトリ自体は、ホスト側のフォルダ名に関係なく
-`/workspace/server-base/core` にマウントされる（`workspaceFolder` もここ）。
-`/workspace/server-base/features` は上記の `server-base-features` のclone置き場で、
-どちらも `/workspace/server-base` 配下の兄弟ディレクトリになる（features 側は
-ホストとは同期しない、コンテナ内だけのclone）。
+コンテナ内では `server-base-core` リポジトリ自体は `/workspace/server-base/core` にマウントされる
+（`workspaceFolder` もここ）。`/workspace/server-base/features` は上記の
+`server-base-features`（devcontainer Feature本体）のclone置き場で、どちらも
+`/workspace/server-base` 配下の兄弟ディレクトリになる。
 
 ```
 .devcontainer/

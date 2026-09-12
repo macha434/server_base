@@ -47,16 +47,12 @@ setup_uv() {
 
 # server-base-features を兄弟ディレクトリとして clone し、VS Code のマルチルート
 # workspace(server-base-core本体 + features)を用意する。
-# `/workspace` はdocker-composeのbind mountで自動生成される root所有ディレクトリなので、
-# `/workspace/server-base` だけを vscode ユーザーに chown する(core/ 配下は
-# 既存のbind mountで正しい所有権が付いているため再帰chownは不要)。
+# `/workspace/server-base` はdocker-composeでホストの server-base ディレクトリを
+# 丸ごとbind mountしているため、所有権は既にホスト側と一致しており chown は不要。
 # clone・workspaceファイルとも「無ければ作る、あれば触らない」(未コミットの
 # 作業や手動編集を消さないため。compose.generated.yaml等の「都度再生成する
 # 生成物」とは扱いが異なる)。
 setup_workspace() {
-    sudo mkdir -p /workspace/server-base
-    sudo chown vscode:vscode /workspace/server-base
-
     if [ ! -d /workspace/server-base/features ]; then
         # server-base-features は補助的なworkspace用リポジトリなので、
         # 未公開・ネットワーク不通等で失敗してもpost-create.sh全体を止めない。
