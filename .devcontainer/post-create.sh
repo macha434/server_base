@@ -13,7 +13,7 @@ install_system_packages() {
 
 # Git の設定
 configure_git() {
-    git config --global --add safe.directory /workspace/server-base/core
+    git config --global --add safe.directory /workspace/server-base/server-base-core
 }
 
 # .claude の所有者を変更する (root でマウントされるため)
@@ -42,7 +42,7 @@ setup_uv() {
     curl -LsSf https://astral.sh/uv/install.sh | sh
     # インストール直後はこのシェル呼び出し内でPATHがまだ更新されていない可能性があるため、
     # インストール先を直接指定して実行する
-    (cd /workspace/server-base/core && "$HOME/.local/bin/uv" sync)
+    (cd /workspace/server-base/server-base-core && "$HOME/.local/bin/uv" sync)
 }
 
 # server-base-features を兄弟ディレクトリとして clone し、VS Code のマルチルート
@@ -53,19 +53,19 @@ setup_uv() {
 # 作業や手動編集を消さないため。compose.generated.yaml等の「都度再生成する
 # 生成物」とは扱いが異なる)。
 setup_workspace() {
-    if [ ! -d /workspace/server-base/features ]; then
+    if [ ! -d /workspace/server-base/server-base-features ]; then
         # server-base-features は補助的なworkspace用リポジトリなので、
         # 未公開・ネットワーク不通等で失敗してもpost-create.sh全体を止めない。
-        git clone https://github.com/macha434/server-base-features.git /workspace/server-base/features \
-            || echo "警告: server-base-features のcloneに失敗しました(後で手動で '/workspace/server-base/features' に clone してください)" >&2
+        git clone https://github.com/macha434/server-base-features.git /workspace/server-base/server-base-features \
+            || echo "警告: server-base-features のcloneに失敗しました(後で手動で '/workspace/server-base/server-base-features' に clone してください)" >&2
     fi
 
     if [ ! -f /workspace/server-base/server-base.code-workspace ]; then
         cat > /workspace/server-base/server-base.code-workspace <<'JSON'
 {
   "folders": [
-    { "name": "server-base-core", "path": "core" },
-    { "name": "server-base-features", "path": "features" }
+    { "name": "🛠️ core", "path": "server-base-core" },
+    { "name": "🧩 features", "path": "server-base-features" }
   ]
 }
 JSON
