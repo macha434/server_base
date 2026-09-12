@@ -45,10 +45,10 @@ curl -k https://time.ubuntu.local/
 post-create.sh が [server-base-features](https://github.com/macha434/server-base-features)
 を `/workspace/server-base/server-base-features` に clone し、`/workspace/server-base/server-base.code-workspace`
 を生成する(初回のみ。既に存在する場合は上書きしない)。コンテナにアタッチした状態で
-`File > Open Workspace from File...` からこのファイルを開くと、`core`（本リポジトリ）と
-`features`（`server-base-features`）が並んだマルチルート表示になる（表示名は
-`.code-workspace` の `name` で `core`/`features` に付け替えており、実際のフォルダ名は
-`server-base-core`/`features` のまま）。
+`File > Open Workspace from File...` からこのファイルを開くと、`🛠️ core`（本リポジトリ）と
+`🧩 features`（`server-base-features`）が並んだマルチルート表示になる（表示名は
+`.code-workspace` の `name` で絵文字付きの `core`/`features` に付け替えており、実際の
+フォルダ名は `server-base-core`/`server-base-features` のまま）。
 
 ## 開発環境の構成
 

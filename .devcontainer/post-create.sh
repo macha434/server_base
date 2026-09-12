@@ -64,8 +64,8 @@ setup_workspace() {
         cat > /workspace/server-base/server-base.code-workspace <<'JSON'
 {
   "folders": [
-    { "name": "core", "path": "server-base-core" },
-    { "name": "features", "path": "server-base-features" }
+    { "name": "🛠️ core", "path": "server-base-core" },
+    { "name": "🧩 features", "path": "server-base-features" }
   ]
 }
 JSON
